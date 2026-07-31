@@ -222,8 +222,19 @@ public enum Typography {
     /// 22pt Charter Bold. Section heads within a note.
     public static let h3 = resolve(body, size: 22).weight(.bold)
 
+    /// 22pt Commit Mono, tabular. Elapsed time in the menu bar popover
+    /// (`DESIGN.md` §5.6: "elapsed time in `h3` Commit Mono tabular"). `h3` names
+    /// the *step*; the family there is the mono, not Charter.
+    public static let h3Mono = resolve(mono, size: 22).monospacedDigit()
+
     /// 28pt Bluu Next. Lecture section titles.
     public static let h2 = resolve(display, size: 28)
+
+    /// 28pt Commit Mono, tabular. Elapsed time on the capture sheet
+    /// (`DESIGN.md` §5.3: "`h2` in Commit Mono tabular figures"). Tabular so the
+    /// digits do not jitter; `.monospacedDigit()` on `h2` itself would only give
+    /// Bluu Next's own figures, which is the display face, not the typed one.
+    public static let h2Mono = resolve(mono, size: 28).monospacedDigit()
 
     /// 35pt Bluu Next. Lecture title.
     public static let h1 = resolve(display, size: 35)
