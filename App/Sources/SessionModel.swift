@@ -49,6 +49,8 @@ final class SessionModel {
     private var note = LectureNote(date: LectureNote.today(), course: unsortedFolder)
     private var tasks: [Task<Void, Never>] = []
     private var workDirectory: URL?
+    /// The models, loading or loaded. See `warmUp()`.
+    private var warm: Task<Transcriber, Error>?
     private var lastLivePass = Date.distantPast
     private var hasDetected = false
     /// Transcript words already sent to a live pass, so the next one can tell how
@@ -133,36 +135,74 @@ final class SessionModel {
         }
     }
 
+    /// Load the transcription models without recording anything.
+    ///
+    /// Called at launch, and this is not an optimisation — it is the difference
+    /// between the app working and not. Loading the Parakeet models takes **~110
+    /// seconds on an M5 even when they are already on disk**, because CoreML
+    /// specialises the encoder for the Neural Engine on first use in a process.
+    /// Measured, not guessed. Paid inside `start()` it looks exactly like a hang:
+    /// press record, watch "Preparing" for two minutes, conclude the app is
+    /// broken. Paid at launch it is over before anyone presses anything.
+    func warmUp() {
+        guard warm == nil else { return }
+        warm = Task {
+            let transcriber = Transcriber()
+            try await transcriber.loadModels()
+            return transcriber
+        }
+    }
+
     func start() {
         guard !phase.isBusy, phase != .recording else { return }
         phase = .preparing
-        statusLine = "Loading the transcriber…"
         reset()
 
         Task {
             do {
+                // The microphone first, before anything slow. macOS shows its
+                // permission dialog the moment this is called, so asking here
+                // means the user sees it immediately rather than after a
+                // two-minute model load they have no reason to wait through —
+                // and a session that cannot record does not pay for the load.
+                statusLine = "Waiting for microphone access…"
+                guard await AudioCapture.requestAccess() else {
+                    throw LectureKitError.microphoneDenied
+                }
+
                 let work = URL.temporaryDirectory
                     .appending(path: "lecture-notes-\(UUID().uuidString)", directoryHint: .isDirectory)
                 try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
                 workDirectory = work
 
-                let tx = Transcriber()
-                try await tx.loadModels()
-                try await tx.start()
-                transcriber = tx
+                warmUp()
+                // Usually already finished, because launch started it. When it
+                // has not, the status says what is being waited on rather than
+                // leaving "Preparing" to mean anything.
+                statusLine = "Loading the transcriber…"
+                guard let transcriber = try await warm?.value else {
+                    throw LectureKitError.modelsUnavailable("the transcriber never loaded")
+                }
+                // Consumed: a Transcriber runs one session, so the next recording
+                // needs its own. Warming the replacement now means the *second*
+                // lecture of a day does not pay the load either.
+                warm = nil
+                try await transcriber.start()
+                self.transcriber = transcriber
 
+                statusLine = "Opening the microphone…"
                 let cap = AudioCapture()
                 // Feed is nonisolated and synchronous so it is safe to call
                 // straight from the capture tap without hopping actors.
                 try await cap.start(writingTo: work.appending(path: "capture.wav")) { buffer in
-                    tx.feed(buffer)
+                    transcriber.feed(buffer)
                 }
                 capture = cap
 
                 phase = .recording
                 statusLine = "Recording"
                 notePath = try? writer.save(&note, settings: settings)
-                observe(capture: cap, transcriber: tx)
+                observe(capture: cap, transcriber: transcriber)
             } catch {
                 fail(error)
             }
@@ -204,6 +244,7 @@ final class SessionModel {
 
             phase = .idle
             statusLine = "Saved"
+            warmUp()
         }
     }
 

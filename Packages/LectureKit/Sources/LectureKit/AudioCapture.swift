@@ -34,6 +34,17 @@ public actor AudioCapture {
         (levelStream, levels) = AsyncStream.makeStream(bufferingPolicy: .bufferingNewest(1))
     }
 
+    /// Ask macOS for the microphone, showing its dialog if it has not been asked.
+    ///
+    /// Exposed separately from `start` so a caller can ask *first*. It used to be
+    /// reachable only from inside `start`, which ran after a model load measured
+    /// at 110 seconds — so the permission dialog appeared two minutes after the
+    /// button was pressed, if it appeared at all, and every second of that looked
+    /// like the app had hung.
+    public static func requestAccess() async -> Bool {
+        await AVCaptureDevice.requestAccess(for: .audio)
+    }
+
     /// Seconds written to disk — the length of the recording, not of the
     /// transcript, which trails it. Still readable after `stop()`, because that
     /// is when the caller wants it for the note.
@@ -52,7 +63,9 @@ public actor AudioCapture {
             throw LectureKitError.captureFailed("already recording")
         }
         do {
-            guard await AVCaptureDevice.requestAccess(for: .audio) else {
+            // Still checked here: `start` is public and must not install a tap
+            // on a device it has no permission for, whatever the caller did.
+            guard await Self.requestAccess() else {
                 throw LectureKitError.microphoneDenied
             }
 

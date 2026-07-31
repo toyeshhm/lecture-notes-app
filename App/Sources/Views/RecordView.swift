@@ -51,16 +51,37 @@ struct RecordView: View {
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             stateMark
-            Text(isRecording ? session.topic : "Ready to record")
+            Text(headline)
                 .font(Typography.h1)
                 .tracking(Typography.h1Tracking)
                 .foregroundStyle(Palette.ink)
                 .accessibilityAddTraits(.isHeader)
-            Text(isRecording
-                ? "\(displayCourse) · \(LectureNote.today())"
-                : "Notes are written when you stop.")
+            // While preparing, this line is the only thing telling the user the
+            // app is alive. Loading the models is slow enough that a static
+            // "Preparing" reads as a hang, so the step is named.
+            Text(subtitle)
                 .font(Typography.ui)
                 .foregroundStyle(Palette.inkSoft)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var headline: String {
+        switch session.phase {
+        case .recording: return session.topic
+        case .preparing: return "Getting ready"
+        case .finishing: return "Writing your notes"
+        case .failed: return "Recording stopped"
+        case .idle: return "Ready to record"
+        }
+    }
+
+    private var subtitle: String {
+        switch session.phase {
+        case .recording: return "\(displayCourse) · \(LectureNote.today())"
+        case .preparing, .finishing: return session.statusLine
+        case .failed: return session.statusLine
+        case .idle: return "Notes are written when you stop."
         }
     }
 

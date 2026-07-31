@@ -33,6 +33,10 @@ struct RootView: View {
             FirstRunView().environment(session)
         }
         .task {
+            // Before the slip, and deliberately not awaited: loading the models
+            // takes ~110s and the whole point is that it happens while the user
+            // is reading this screen rather than after they press record.
+            session.warmUp()
             showingFirstRun = await FirstRunView.shouldPresent(settings: session.settings)
         }
         // A recording takes the pane whenever it starts, from wherever you were.
