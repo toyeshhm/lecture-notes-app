@@ -348,7 +348,6 @@ struct ModelDownloadView: View {
                 .frame(width: Spacing.measure)
                 .plateFrame(padding: Spacing.sheetPadding)
                 .background(Palette.sheet)
-                .plateMark()
                 .padding(Spacing.plate)
         }
         .task { await download.refresh() }

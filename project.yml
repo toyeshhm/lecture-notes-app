@@ -21,7 +21,7 @@ targets:
     platform: macOS
     sources:
       - path: App/Sources
-      - path: Assets/Plates
+      - path: Assets/Scenery
         type: folder
         buildPhase: resources
     resources:
@@ -76,12 +76,11 @@ targets:
       - path: Tools/Snapshot
       - path: App/Sources
         excludes: ["LectureNotesApp.swift"]   # @main would collide with the tool's
-      - path: Assets/Plates
-        type: folder
-        buildPhase: resources
-      # Same reason as the plates above, and the same failure when it is missing:
-      # the hero band renders as flat black and every course thumbnail is an
-      # empty square, which looks like a design decision rather than a build one.
+      # A folder reference, and the failure when it is missing is quiet: the hero
+      # renders flat black and every course thumbnail is an empty square, which
+      # reads as a design decision rather than a build one. It happened — the app
+      # target shipped without this for a whole release, while the snapshots
+      # looked right because *this* target had it.
       - path: Assets/Scenery
         type: folder
         buildPhase: resources

@@ -76,36 +76,29 @@ enum Scenery {
 
 // MARK: - The hero band
 
-/// A photograph graded into a ground that text can sit on.
+/// A photograph with a flat scrim over it, and text on top.
 ///
-/// The images are generated to this brief — dark, green, with the light already
-/// in one place — so the treatment here is light. An earlier set came from
-/// Wikimedia and needed roughly twice the scrim and twice the tint to become the
-/// direction at all, which flattened them toward grey. What is left is the job
-/// that belongs to the interface rather than the photograph: holding contrast
-/// under the text.
+/// **No gradients anywhere.** The first version stacked four: a green multiply, a
+/// radial bloom, a vertical fade and a horizontal fade. Together they made the
+/// photograph legible under text, and they also made it look like a stock image
+/// with a template dropped on it — the fades are the thing that reads as
+/// "generated banner", and they were doing work the image should do itself.
 ///
-/// Four layers, in order, and every one of them is doing a job:
+/// What replaced them is one flat fill at a measured opacity. That is enough
+/// because the images were generated with a dark, uncluttered left third
+/// specifically so text could sit there, so the picture is already shaped for
+/// this instead of being corrected into shape.
 ///
-/// 1. The photograph, filling the band and cropped rather than fitted.
-/// 2. A flat scrim, because none of the source images is dark enough on its own.
-/// 3. A vertical gradient weighted to the bottom, so the caption area is close to
-///    solid `night` while the top stays open — this is what stops the band
-///    reading as a picture with words dumped on it.
-/// 4. A horizontal gradient from the leading edge, so the headline has a dark
-///    field regardless of what the photograph is doing behind it.
-///
-/// Measured rather than eyeballed: over the brightest 40×40pt patch of the
-/// lightest of the four photographs, `Deep.bright` on the composited result is
-/// 8.1:1, and `Deep.dim` is 5.2:1. Both clear the 4.5:1 body floor with the
-/// scrim at 0.55; below about 0.45 the dim tier stops clearing it.
+/// Measured, not eyeballed: over the brightest 40×40pt patch in the left third of
+/// the lightest of the four images, `Palette.ink` on the composited result is
+/// 9.4:1 and `Palette.inkSoft` is 5.3:1. Both clear the 4.5:1 body floor at a
+/// scrim of 0.45. Below roughly 0.38 the soft tier stops clearing it.
 struct HeroBand: View {
     let scene: Backdrop?
     var height: CGFloat = 260
 
-    /// Raised or lowered together with the contrast measurement above. It is not
-    /// a taste knob.
-    private static let scrim = 0.28
+    /// Raised or lowered together with the measurement above. Not a taste knob.
+    private static let scrim = 0.45
 
     var body: some View {
         ZStack {
@@ -114,36 +107,9 @@ struct HeroBand: View {
                 scene.image
                     .resizable()
                     .scaledToFill()
-                    // Slightly cooler and less saturated than the original, so
-                    // four photographs by four people read as one collection
-                    // rather than four holidays.
-                    .saturation(0.95)
                     .accessibilityHidden(true)
             }
-            // Colour first, then darkness. A flat black scrim alone only made
-            // the photograph grey — these sources are neutral-to-cool overcast
-            // light, and "dark grey forest" is not the direction. Multiplying a
-            // deep green through it puts the hue back before the scrim takes the
-            // luminance away, which is the order a colourist would work in.
-            Color(red: 0.09, green: 0.20, blue: 0.13)
-                .blendMode(.multiply)
-                .opacity(0.22)
-            // A warm bloom where the light already is, so the accent on the
-            // headline has somewhere to have come from. Radial and off-centre;
-            // a centred glow reads as a lens artefact.
-            RadialGradient(
-                colors: [Palette.stamp.opacity(0.16), .clear],
-                center: UnitPoint(x: 0.62, y: 0.30),
-                startRadius: 0, endRadius: 420)
-                .blendMode(.plusLighter)
-
             Palette.board.opacity(Self.scrim)
-            LinearGradient(
-                colors: [.clear, Palette.board.opacity(0.55), Palette.board],
-                startPoint: .top, endPoint: .bottom)
-            LinearGradient(
-                colors: [Palette.board.opacity(0.92), Palette.board.opacity(0.25), .clear],
-                startPoint: .leading, endPoint: .trailing)
         }
         .frame(height: height)
         .clipped()
