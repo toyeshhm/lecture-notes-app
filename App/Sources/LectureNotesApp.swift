@@ -35,7 +35,11 @@ struct LectureNotesApp: App {
         // The Settings scene, so ⌘, and the app menu both reach it the way they
         // reach it in every other Mac app. `SettingsView` supplies its own
         // scrolling and its own board ground; the window is just the frame.
-        Settings {
+        // `SwiftUI.Settings` qualified: LectureKit exports a `Settings` model and
+        // an unqualified `Settings { }` here resolves to that struct, which fails
+        // with "a 'some' type must specify only Any, AnyObject, protocols" —
+        // an error that names the scene and not the collision causing it.
+        SwiftUI.Settings {
             SettingsView()
                 .environment(session)
                 .frame(minWidth: 640, minHeight: 480)

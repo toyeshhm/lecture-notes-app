@@ -16,13 +16,13 @@ xcuserdata/
 # moves. Only the ones the README embeds are kept, because a README with broken
 # images is worse than the churn.
 Snapshots/*
-!Snapshots/capture-recording-dark.png
-!Snapshots/capture-recording-light.png
 !Snapshots/firstrun-dark.png
 !Snapshots/firstrun-light.png
 !Snapshots/library-folio-dark.png
 !Snapshots/library-folio-light.png
 !Snapshots/reader-dark.png
 !Snapshots/reader-light.png
+!Snapshots/record-idle-dark.png
+!Snapshots/record-live-dark.png
 !Snapshots/settings-dark.png
 !Snapshots/settings-light.png

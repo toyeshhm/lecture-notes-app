@@ -1,5 +1,5 @@
 {
-  "originHash" : "4ecd68f4aead2e099a22d8943052e9354559b3798d6446d06db32c829dfef3d0",
+  "originHash" : "e8fc35e47166b8cf707b51603ee1096692dd3b0ddef14605c80762d7f03be33b",
   "pins" : [
     {
       "identity" : "fluidaudio",
@@ -8,24 +8,6 @@
       "state" : {
         "revision" : "19600a485baa4998812e4654b70d2bab8f2c9949",
         "version" : "0.15.5"
-      }
-    },
-    {
-      "identity" : "swift-cmark",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-cmark.git",
-      "state" : {
-        "revision" : "924936d0427cb25a61169739a7660230bffa6ea6",
-        "version" : "0.8.0"
-      }
-    },
-    {
-      "identity" : "swift-markdown",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-markdown.git",
-      "state" : {
-        "revision" : "3c6f9523da3a1ec2fd829673e472d95b8097a3b8",
-        "version" : "0.8.0"
       }
     }
   ],

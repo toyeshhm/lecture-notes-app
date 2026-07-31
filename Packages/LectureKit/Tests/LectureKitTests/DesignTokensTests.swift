@@ -44,12 +44,14 @@ import Testing
         }
     }
 
-    /// Cinnabar is legal as *text* on `board` and `sheet` only. On dark `wash` it
-    /// measures 3.80, which is why the callout title in a note sets on the sheet
-    /// and never inside a `wash` fill.
-    @Test func stampIsLegalTextOnBoardAndSheet() {
+    /// The accent is legal as text on every plane in this palette — 7.42:1 at its
+    /// worst, on `wash`. It was board-and-sheet only under Hortus Siccus, where
+    /// the cinnabar measured 3.80 on the dark wash; the carve-out went with the
+    /// pigment. Asserted rather than dropped, because the accent is the one token
+    /// most likely to be re-tuned for looks.
+    @Test func accentIsLegalTextEverywhere() {
         for appearance in Appearance.allCases {
-            for plane in Self.planes.filter({ $0.name != "wash" }) {
+            for plane in Self.planes {
                 let ratio = contrast(Palette.stamp, on: plane.colour, in: appearance)
                 #expect(
                     ratio >= Self.textFloor,
@@ -87,13 +89,32 @@ import Testing
         }
     }
 
-    /// The two planes have to be distinguishable from each other, and in dark they
-    /// deliberately are not: 1.13:1 is why the sheet carries a border and a
-    /// hard-edged shadow there. Pinned so the compensation is never dropped on the
-    /// assumption that the planes separate on their own.
-    @Test func darkPlanesDoNotSeparateOnTheirOwn() {
-        #expect(contrast(Palette.sheet, on: Palette.board, in: .light) > 1.3)
-        #expect(contrast(Palette.sheet, on: Palette.board, in: .dark) < 1.2)
+    /// The planes are deliberately close — 1.10:1 — which is the reason the sheet
+    /// carries a border and a hard-edged shadow rather than relying on its fill.
+    /// Pinned so nobody "fixes" the flatness by pulling them apart and quietly
+    /// removes the need for the compensation that is still drawn everywhere.
+    @Test func planesDoNotSeparateOnTheirOwn() {
+        for appearance in Appearance.allCases {
+            #expect(contrast(Palette.sheet, on: Palette.board, in: appearance) < 1.2)
+            #expect(contrast(Palette.wash, on: Palette.board, in: appearance) < 1.4)
+        }
+    }
+
+    /// The design commits to dark, and that commitment is a fact about the tokens
+    /// rather than a note in a comment: every one of them resolves identically in
+    /// both appearances. A token that drifted apart would put light-mode text on
+    /// a dark-graded photograph.
+    @Test(arguments: [
+        ("board", Palette.board), ("sheet", Palette.sheet), ("wash", Palette.wash),
+        ("ink", Palette.ink), ("inkSoft", Palette.inkSoft), ("rule", Palette.rule),
+        ("plate", Palette.plate), ("stamp", Palette.stamp),
+    ])
+    func tokenIsAppearanceIndependent(token: (name: String, colour: Color)) {
+        let light = luminance(token.colour, in: .light)
+        let dark = luminance(token.colour, in: .dark)
+        #expect(
+            abs(light - dark) < 0.0001,
+            "\(token.name) differs between appearances: \(light) vs \(dark)")
     }
 
     // MARK: Measurement

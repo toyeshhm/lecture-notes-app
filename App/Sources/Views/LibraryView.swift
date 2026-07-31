@@ -2,7 +2,7 @@ import Foundation
 import LectureKit
 import SwiftUI
 
-/// The library: a course opened as a full-plate composition with its lectures
+/// The library: a course as a scene with its lectures listed beneath it.
 /// listed beneath (`DESIGN.md` §5.2 and §5.4).
 ///
 /// Nothing here is a card. A course is a composition on the board inside a
@@ -43,7 +43,8 @@ struct LibraryView: View {
                             course: folio.name,
                             lectures: folio.lectures,
                             directory: session.settings.lectureDirectory(course: folio.name),
-                            selection: $selection)
+                            selection: $selection,
+                            sceneIndex: index)
                     }
                 }
             }
@@ -105,9 +106,9 @@ struct LibraryView: View {
     }
 }
 
-// MARK: - Course plate
+// MARK: - Course
 
-/// One course as a full-plate composition (`DESIGN.md` §5.2).
+/// One course: its scene, its name, and every lecture filed under it.
 private struct CoursePlate: View {
     let course: String
     let lectures: [LibraryLecture]
@@ -117,28 +118,28 @@ private struct CoursePlate: View {
 
     /// The header band.
     ///
-    /// Set by the plate, not by the type. The title block needs about 76pt, but a
-    /// Köhler plate is portrait at roughly 2:3, so cropping one into a 96pt band a
-    /// third of the window wide leaves a horizontal sliver of stem — full-bleed
-    /// in the literal sense and useless as identification. Three `mount` units
-    /// gives the crop enough height that the plant is recognisable, which is the
-    /// entire reason a course carries a plate.
-    private static let headerHeight = Spacing.mount * 3
+    /// A 16:9 crop deep enough to read as a place, with room for the title over
+    /// it. Shorter than the record screen's hero, because a folio stacks several
+    /// of these and a full-height band each would make two courses a scroll.
+    private static let headerHeight = Spacing.mount * 2
+
+    /// The course's scene, spread across the set rather than hashed to it.
+    ///
+    /// `Scenery.scene(for:)` hashes the course code, which is right in the
+    /// sidebar where each row is seen on its own. In a folio the courses are
+    /// stacked and adjacent, and with four scenes and three courses a hash
+    /// collision is likelier than not — two courses in a row drew the same
+    /// waterfall, which reads as a bug rather than as a coincidence. Position in
+    /// the list cannot collide.
+    let sceneIndex: Int
+
+    private var scene: Backdrop? { Scenery.scene(atOffset: sceneIndex) }
 
     /// 6pt, per §5.2. The scale has no 6, so it is spelled the way `CourseRow`
     /// spells its disc: `sm` less two hairlines.
     private static let underlineGap = Spacing.sm - Spacing.hair * 2
 
     @Environment(\.colorScheme) private var colorScheme
-
-    private var plate: Plate? { PlateAssignment.plate(for: course) }
-
-    /// A Köhler plate is dark linework on white paper, so at full strength on the
-    /// near-black dark board it is a lit panel — precisely the glow §1 bans, and
-    /// the brightest thing in a window whose reading surface sits at L 0.228.
-    /// Pulling the whole image back darkens paper and plant together, so contrast
-    /// *within* the plate is untouched and only its weight on the board changes.
-    private var plateOpacity: Double { colorScheme == .dark ? 0.62 : 1 }
 
     /// `_Unsorted` is a folder name, not a course name, and it is the one value
     /// here that was never typed by a person.
@@ -162,48 +163,20 @@ private struct CoursePlate: View {
 
     // MARK: Header
 
-    private var header: some View {
-        // The one geometry read in the file, and it is bounded: a fixed height
-        // with a proportional split inside it. §5.2 specifies the left *third*,
-        // which no stack alignment expresses.
-        GeometryReader { geo in
-            HStack(alignment: .top, spacing: 0) {
-                silhouette
-                    .frame(width: geo.size.width / 3, height: Self.headerHeight)
-                    .clipped()
-                titleBlock
-                    .padding(.horizontal, Spacing.xl)
-                    .padding(.vertical, Spacing.lg)
-            }
-        }
-        .frame(height: Self.headerHeight)
-    }
-
-    /// Full-bleed: no border, no inset, no rounding. The plate runs to the
-    /// composition's inner edge and is cut off by it, the way an engraving is
-    /// cut off by the sheet it was pressed onto.
+    /// The course's scene, full width, with the title sitting on it.
     ///
-    /// Shown at full strength here, unlike the sidebar's 35% saturation: at
-    /// 32pt three plates in a column are a swatch book, but one plate at a
-    /// third of the window is the specimen and is meant to be looked at.
-    @ViewBuilder private var silhouette: some View {
-        if let plate {
-            // `scaledToFill` deliberately overflows, so the clip has to run
-            // against a frame with two concrete sides. `maxHeight: .infinity`
-            // inside a `GeometryReader` is not one: the reader proposes its size
-            // but does not constrain what a child reports back, so the image kept
-            // its own 2:3 aspect at a third of the window — roughly 300pt tall in
-            // a 96pt band — and drew straight over the lecture rows beneath. The
-            // caller supplies both sides now.
-            plate.image
-                .resizable()
-                .scaledToFill()
-                .opacity(plateOpacity)
-                .accessibilityHidden(true)   // the species is in the caption line
-        } else {
-            // Keeps the third: a collapsed column would re-flow the title and
-            // read as a layout bug rather than as a missing image.
-            Color.clear
+    /// It was a left-third crop of a Köhler plate beside a title block. Cropping
+    /// a portrait engraving into a wide band left a sliver of stem, which is why
+    /// the band had to be three `mount` units tall to be legible at all — and the
+    /// composition then had a large empty right half. A 16:9 photograph fills the
+    /// band at its own aspect and the title goes on top of it, which is both
+    /// truer to the direction and less geometry.
+    private var header: some View {
+        ZStack(alignment: .bottomLeading) {
+            HeroBand(scene: scene, height: Self.headerHeight)
+            titleBlock
+                .padding(.horizontal, Spacing.xl)
+                .padding(.vertical, Spacing.lg)
         }
     }
 
@@ -220,23 +193,28 @@ private struct CoursePlate: View {
                 .fill(Palette.rule)
                 .frame(height: Spacing.hair)
 
-            // The determination line: what this specimen is, and how many
-            // sheets of it are filed. Never a pill or a chip row.
-            SpecimenLabel(title: plate?.species ?? displayName, detail: tally)
-                .padding(.top, Spacing.xs)
-
-            Spacer(minLength: 0)
+            // How many lectures are filed here and when the latest was, set as
+            // one line. Never a pill or a chip row.
+            if let tally {
+                SpecimenLabel(title: tally)
+                    .padding(.top, Spacing.xs)
+            }
         }
+        // No trailing Spacer. The block is bottom-aligned inside the hero, and a
+        // Spacer inside it pushed the title to the top of the band and left the
+        // rest of the composition empty above the first row.
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
     }
 
     private var tally: String? {
         guard let newest = lectures.first else { return nil }
-        let sheets = lectures.count == 1 ? "1 sheet" : "\(lectures.count) sheets"
+        // "Lectures", not "sheets": the herbarium metaphor went with the
+        // botanical plates, and a student has lectures.
+        let count = lectures.count == 1 ? "1 lecture" : "\(lectures.count) lectures"
         // `scan` returns newest first, so the head of the list is the last
         // lecture recorded.
-        return "\(sheets) · \(newest.date)"
+        return "\(count) · latest \(newest.date)"
     }
 
     // MARK: Rows

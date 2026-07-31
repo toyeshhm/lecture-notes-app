@@ -191,13 +191,13 @@ enum Main {
             render("menubar-failed", size: CGSize(width: 240, height: 230),
                    MenuBarView().environment(failed))
 
-            render("capture-idle", size: CGSize(width: 840, height: 700),
-                   CaptureView().environment(idle))
-            render("capture-recording", size: CGSize(width: 840, height: 700),
-                   CaptureView().environment(recording))
+            render("record-idle", size: CGSize(width: 900, height: 900),
+                   RecordView().environment(idle))
+            render("record-live", size: CGSize(width: 900, height: 900),
+                   RecordView().environment(recording))
 
             render("sidebar", size: CGSize(width: 232, height: 700),
-                   SidebarView(selection: .constant(nil)).environment(recording))
+                   SidebarView(section: .constant(.record), course: .constant(nil)).environment(recording))
 
             render("window-recording", size: CGSize(width: 1120, height: 720),
                    RootView().environment(recording))

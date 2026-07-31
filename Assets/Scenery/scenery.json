@@ -1,0 +1,36 @@
+{
+  "scenery": [
+    {
+      "slug": "clearing",
+      "title": "ChatGPT Image Jul 31, 2026, 04_23_47 PM.png",
+      "descriptionUrl": "",
+      "licence": "Generated",
+      "credit": "Generated with ChatGPT (OpenAI) for this project",
+      "file": "clearing.jpg"
+    },
+    {
+      "slug": "hollow",
+      "title": "ChatGPT Image Jul 31, 2026, 04_25_51 PM.png",
+      "descriptionUrl": "",
+      "licence": "Generated",
+      "credit": "Generated with ChatGPT (OpenAI) for this project",
+      "file": "hollow.jpg"
+    },
+    {
+      "slug": "pines",
+      "title": "ChatGPT Image Jul 31, 2026, 04_27_41 PM.png",
+      "descriptionUrl": "",
+      "licence": "Generated",
+      "credit": "Generated with ChatGPT (OpenAI) for this project",
+      "file": "pines.jpg"
+    },
+    {
+      "slug": "rain",
+      "title": "ChatGPT Image Jul 31, 2026, 04_29_09 PM.png",
+      "descriptionUrl": "",
+      "licence": "Generated",
+      "credit": "Generated with ChatGPT (OpenAI) for this project",
+      "file": "rain.jpg"
+    }
+  ]
+}

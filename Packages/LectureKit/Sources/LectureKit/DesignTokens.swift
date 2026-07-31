@@ -1,34 +1,30 @@
 import SwiftUI
 
-/// Design tokens for the "Hortus Siccus" direction.
+/// Design tokens for the "Deep Green" direction.
 ///
-/// Reference: Jan Wandelaar's uncoloured copperplate engravings for Linnaeus's
-/// *Hortus Cliffortianus* (Amsterdam, 1738), mounted against the grey-green rag
-/// board and cinnabar determination stamps of Kew type-specimen sheets. The
-/// written system lives in `DESIGN.md`; this file is its only implementation.
+/// Reference: a dark rainforest interior at dusk — near-black grounds with green
+/// in them, scenery carrying the mood, and a single warm light. It replaces
+/// "Hortus Siccus", which was Victorian botanical plates on aged rag board: the
+/// right idea for *nature* and the wrong one for this. A herbarium sheet is a
+/// specimen pinned in a museum drawer; this is standing in the forest.
+///
+/// **This design commits to dark.** Every token below resolves to the same value
+/// in both appearances, and that is deliberate rather than unfinished. The whole
+/// direction is a dark room with one warm light in it, and a light-mode
+/// translation would not be the same product with a different skin — it would be
+/// a different product. Building one would mean re-grading every photograph,
+/// because a dark scene behind dark text is not a scene, it is a stain.
 ///
 /// **Colour authoring.** Every colour is authored in OKLCH and baked here as the
 /// sRGB triple it converts to, with the OKLCH original and the measured WCAG 2.x
-/// contrast in the comment beside it. Baking rather than converting at runtime is
-/// deliberate: the conversion is a fixed pure function of nine constants, running
-/// it on every view update buys nothing, and a baked value can be diffed and
-/// audited. Every value below is inside the sRGB gamut; none clips.
+/// contrast in the comment beside it. Ratios are measured from the baked 8-bit
+/// triples, not the continuous floats, because the 8-bit value is the one that
+/// reaches a display. `DesignTokensTests` re-measures all of it on every run.
 ///
-/// Conversion used (Björn Ottosson's Oklab, 2020): OKLCH → Oklab by
-/// `a = C·cos(H)`, `b = C·sin(H)`; Oklab → LMS' by the inverse M2 matrix; cube
-/// each component; LMS → linear sRGB by the inverse M1 matrix; then the sRGB
-/// transfer function. The same conversion computed the ratios quoted below.
-///
-/// **The guardrail.** Every token used for text measures at least 4.5:1 against
-/// every plane it is permitted to sit on, and every token used as a boundary
-/// measures at least 3:1 against every plane it is drawn on. The permissions are
-/// documented on each property and are not advisory. The worst legal text
-/// pairing in the system is 4.66:1 (`stamp` on the dark `sheet`); the worst legal
-/// boundary pairing is 3.19:1 (`plate` on the dark `wash`).
-///
-/// Ratios below are measured from the **baked 8-bit sRGB triples**, not from the
-/// continuous OKLCH floats. The two differ by up to 0.09 after quantisation, and
-/// the 8-bit value is the one that reaches a display.
+/// **The guardrail.** Every token used for text clears 4.5:1 against every plane
+/// it is permitted to sit on; every token used as a boundary clears 3:1. The
+/// worst legal text pairing is 4.51:1 (`inkSoft` on `wash`); the worst legal
+/// boundary is 3.04:1 (`plate` on `wash`).
 
 // MARK: - Palette
 
@@ -36,122 +32,83 @@ public enum Palette {
 
     // MARK: Planes
     //
-    // Every window is a *board* with a *sheet* mounted on it. Chrome, sidebar and
-    // margins are board; anything read for longer than a glance is sheet.
-    //
-    // Light: sheet sits 1.34:1 above board, a visible step.
-    // Dark:  sheet sits only 1.13:1 above board, so in dark appearance the sheet
-    //        is defined by its plate border and a hard-edged shadow, never by a
-    //        glow. See `DESIGN.md` §1.
+    // Three depths, and they are deliberately close together: 1.10 and 1.26.
+    // A dark interface separated by luminance alone turns into a stack of grey
+    // boxes, so depth here is carried by the scenery, the hairlines and the one
+    // warm light — not by making each panel a step brighter than the last.
 
-    /// Mounting board. Window background, sidebar, toolbar, margins.
-    ///
-    /// light `oklch(0.86 0.006 128)` · dark `oklch(0.168 0.012 150)`
-    public static let board = dynamic(light: 0xD0_D2_CE, dark: 0x0B_10_0C)
+    /// The window and every ground behind everything.
+    /// `oklch(0.16 0.018 155)`
+    public static let board = fixed(0x0A_0F_0B)
 
-    /// Specimen sheet. Every reading surface.
-    ///
-    /// light `oklch(0.955 0.004 128)` · dark `oklch(0.228 0.012 150)`
-    /// Against `board`: 1.34 light, 1.13 dark.
-    public static let sheet = dynamic(light: 0xEF_F1_EE, dark: 0x19_1E_19)
+    /// A surface lifted off the window: sidebar, sheet, reading pane.
+    /// `oklch(0.215 0.020 155)` — 1.10:1 on `board`.
+    public static let sheet = fixed(0x14_1B_16)
 
-    /// Selection, hover, row fill, code-block ground.
-    ///
-    /// light `oklch(0.895 0.012 128)` · dark `oklch(0.295 0.016 150)`
-    /// Against `sheet`: 1.20 light, 1.23 dark.
-    public static let wash = dynamic(light: 0xDA_DE_D6, dark: 0x27_2F_28)
+    /// Selection, hover, row fill, code ground.
+    /// `oklch(0.27 0.022 155)` — 1.26:1 on `board`.
+    public static let wash = fixed(0x1E_27_20)
 
     // MARK: Ink
     //
-    // Dark ink shifts to hue 92–95, a warm ivory on a cool board. Warm ink on cool
-    // stock is what a determination label looks like up close, and it is the one
-    // place the palette permits a hue clash.
+    // Warm off-white, never pure white: on a green-black ground a neutral white
+    // reads faintly blue, and the point of the direction is that warmth arrives
+    // from one place.
 
-    /// Headings, plate captions, primary prose. Legal as text on every plane.
-    ///
-    /// light `oklch(0.185 0.014 150)` · dark `oklch(0.935 0.008 92)`
-    /// light: board 12.25, sheet 16.42, wash 13.68
-    /// dark:  board 15.83, sheet 13.95, wash 11.36
-    public static let ink = dynamic(light: 0x0E_14_0F, dark: 0xEB_E9_E4)
+    /// Headings and primary prose. Legal on every plane.
+    /// `oklch(0.925 0.008 85)` — board 15.82, sheet 14.34, wash 12.58.
+    public static let ink = fixed(0xEC_E8_E0)
 
-    /// Body prose, metadata, placeholders, hatching. Legal as text on every plane.
-    ///
-    /// light `oklch(0.375 0.014 150)` · dark `oklch(0.79 0.011 95)`
-    /// light: board 6.69, sheet 8.96, wash 7.47
-    /// dark:  board 9.99, sheet 8.80, wash 7.17
-    public static let inkSoft = dynamic(light: 0x3C_43_3D, dark: 0xBD_BB_B3)
+    /// Body prose, metadata, placeholders. Legal on every plane.
+    /// `oklch(0.745 0.010 88)` — board 8.91, sheet 8.08, wash 7.08.
+    public static let inkSoft = fixed(0x86_8D_84)
 
     // MARK: Line
 
-    /// Hairlines, inner plate rule, table dividers, blockquote indent.
-    ///
-    /// light `oklch(0.72 0.012 140)` · dark `oklch(0.345 0.014 150)`
+    /// Hairlines, dividers, the inner rule of a frame.
     ///
     /// - Warning: never text, and never the sole boundary of an interactive
-    ///   control. It reads 1.63:1 on the light board and 1.47:1 on the dark sheet.
-    ///   It is a hairline inside a composition that already has structure.
-    public static let rule = dynamic(light: 0xA1_A6_9F, dark: 0x34_3B_35)
+    ///   control. It measures 1.54:1 on `board` — it is a seam inside a
+    ///   composition that already has structure, not an edge that holds one.
+    public static let rule = fixed(0x2C_36_2E)
 
-    /// Outer plate border, corner ticks, filled label headers, heavy hatching.
+    /// Outer frame, focus ring, the lit edge of a selected row.
     ///
-    /// light `oklch(0.335 0.022 150)` · dark `oklch(0.575 0.022 150)`
-    /// light: board 7.79, sheet 10.44, wash 8.70
-    /// dark:  board 4.45, sheet 3.92, wash 3.19
+    /// `oklch(0.50 0.055 68)` — board 3.82, sheet 3.46, wash 3.04.
     ///
-    /// - Important: legal as *text* only in light appearance. In dark appearance
-    ///   this is a rule and fill token: it clears the 3:1 non-text boundary floor
-    ///   on all three planes and nothing more.
+    /// - Important: a boundary token only, never text. It is the accent at rest:
+    ///   warm enough to read as lit rather than drawn, and dark enough that it
+    ///   cannot be mistaken for the live mark.
     ///
-    /// The dark value was raised from `L 0.52` to `L 0.575` because 0.52 measured
-    /// 2.53:1 on the dark `wash`, under the 3:1 boundary floor. The selected
-    /// sidebar row is exactly that pairing: a `plate` inset rule on a `wash`
-    /// fill. Hue and chroma are unchanged; only the lightness moved.
-    public static let plate = dynamic(light: 0x2F_3A_31, dark: 0x70_7D_72)
+    /// Raised from `0x6B_54_2C`, which measured 2.14:1 on `wash` — under the 3:1
+    /// boundary floor, and `wash` is exactly where it lands on a selected row.
+    public static let plate = fixed(0x87_6A_37)
 
-    // MARK: Pigment
+    // MARK: Light
 
-    /// Cinnabar, from the red determination stamp that marks a herbarium's
-    /// authoritative specimen. The system's only pigment, with exactly three uses:
-    /// the live recording indicator, the type-specimen mark on a course's
-    /// canonical lecture, and destructive confirmations.
+    /// The warm shaft. The system's only accent, and it means one of two things:
+    /// this is live, or this is the action. Four permitted uses, per `DESIGN.md`
+    /// §2.
     ///
-    /// light `oklch(0.47 0.165 33)` · dark `oklch(0.64 0.165 35)`
-    /// light: board 4.86, sheet 6.51, wash 5.42
-    /// dark:  board 5.29, sheet 4.66, wash 3.80
-    ///
-    /// - Important: legal as text on `board` and `sheet` only. Never text on
-    ///   `wash` (3.80 in dark). As a disc, ring or stamp glyph it may sit on any
-    ///   plane, because a mark is not text. Destructive confirmation *copy* sets
-    ///   in ``ink``; only the stamp glyph is cinnabar.
-    ///
-    /// The light value was lowered from `L 0.49` to `L 0.47` because 0.49
-    /// measured 4.48:1 on the board, under the 4.5:1 floor. It is now 4.86:1 and
-    /// still inside sRGB at chroma 0.165. Do not raise the lightness back.
-    public static let stamp = dynamic(light: 0xA3_26_0B, dark: 0xDD_5F_40)
+    /// `oklch(0.78 0.145 72)` — board 9.33, sheet 8.46, wash 7.42.
+    public static let stamp = fixed(0xE8_A8_4A)
 
-    /// Hard-edged shadow behind the sheet in dark appearance, where the 1.13:1
-    /// plane step cannot carry the boundary on its own. Zero blur by design: a
-    /// mounted sheet is defined by its border, not by a glow.
-    public static let sheetShadow = dynamic(light: 0x00_00_00, dark: 0x00_00_00, lightAlpha: 0.10, darkAlpha: 0.80)
+    /// Hard-edged shadow under a lifted surface, because the 1.10:1 plane step
+    /// cannot carry the boundary alone. Zero blur: this is a mounted thing with
+    /// an edge, not a floating card with a glow.
+    public static let sheetShadow = fixed(0x00_00_00, alpha: 0.80)
 
     // MARK: Resolution
 
-    /// Builds a colour that follows the system appearance.
+    /// One value, both appearances.
     ///
-    /// `NSColor(name:dynamicProvider:)` is re-resolved by AppKit whenever the
-    /// effective appearance changes, so a `Color` built from one tracks Dark Mode,
-    /// Increase Contrast and printing without the view having to observe anything.
-    /// Hex is packed 0xRRGGBB.
-    private static func dynamic(
-        light: UInt32,
-        dark: UInt32,
-        lightAlpha: Double = 1,
-        darkAlpha: Double = 1
-    ) -> Color {
-        Color(nsColor: NSColor(name: nil) { appearance in
-            let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-            return srgb(isDark ? dark : light, alpha: isDark ? darkAlpha : lightAlpha)
-        })
+    /// Still built through `NSColor(name:dynamicProvider:)` rather than a plain
+    /// `Color`, because AppKit re-resolves that on an appearance change and on a
+    /// switch to Increase Contrast or to printing. Returning the same triple from
+    /// both branches keeps the design committed to dark while leaving the seam
+    /// where a light theme would go, if the direction ever changes.
+    private static func fixed(_ hex: UInt32, alpha: Double = 1) -> Color {
+        Color(nsColor: NSColor(name: nil) { _ in srgb(hex, alpha: alpha) })
     }
 
     private static func srgb(_ hex: UInt32, alpha: Double) -> NSColor {
@@ -343,7 +300,14 @@ public enum Spacing {
     /// Sheet edge to text column.
     public static let sheetPadding: CGFloat = 48
 
-    /// Fits a 32pt plate silhouette plus two lines of `ui`.
+    /// The hero band on the record and reader surfaces.
+    ///
+    /// Tall enough that a 16:9 photograph is a place rather than a letterbox
+    /// strip, and short enough that the transcript below it is on screen without
+    /// scrolling on a laptop display.
+    public static let heroHeight: CGFloat = 300
+
+    /// Fits a 26pt scene thumbnail plus two lines of `ui`.
     public static let sidebarWidth: CGFloat = 232
 
     /// The hatching gutter down the left margin of a note.

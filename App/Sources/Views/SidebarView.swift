@@ -1,17 +1,19 @@
 import LectureKit
 import SwiftUI
 
-/// The course list, as a collection of mounted specimens.
+/// Where you are in the app, and which course you are looking at.
 ///
-/// Board ground throughout: this is chrome, nothing here is read at length, and
-/// the texture and grain of the board plane never reach the sheet (DESIGN.md
-/// §1). Each row's only per-course discriminator is its Köhler plate, so five
-/// courses read as five recognisably different plants at a glance.
+/// It used to be a bare column of courses, with every action — start a recording,
+/// open settings — reachable only from the menu bar popover or a keyboard
+/// shortcut. That was a deliberate choice and it was wrong: a window with no
+/// visible way to record is a broken window, and the first thing said about the
+/// shipped app was that it had no way to start a recording. It had two. Neither
+/// was in the window.
 struct SidebarView: View {
 
-    /// The selected course code. A binding so the detail pane can follow it
-    /// without the sidebar knowing anything about what a detail pane is.
-    @Binding var selection: String?
+    @Binding var section: AppSection
+    /// The selected course. Nil means all of them.
+    @Binding var course: String?
 
     @Environment(SessionModel.self) private var session
 
@@ -27,105 +29,220 @@ struct SidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            header
-            if courses.isEmpty {
-                emptyState
-            } else {
-                list
+            title
+            ForEach(AppSection.allCases) { item in
+                NavRow(
+                    section: item,
+                    isSelected: section == item,
+                    isLive: item == .record && session.phase == .recording,
+                    select: { section = item })
             }
-            Spacer(minLength: 0)
+
+            courseHeader
+            if courses.isEmpty {
+                emptyCourses
+            } else {
+                courseList
+            }
+
+            Spacer(minLength: Spacing.lg)
+            destination
         }
         .frame(width: Spacing.sidebarWidth)
-        // The sidebar *is* board (DESIGN.md §1), so it carries the board's grain
-        // rather than a flat fill. `BoardBackground` already lays `Palette.board`
-        // underneath the grain, so this is the same plane, not an extra layer.
-        .background(BoardBackground())
-        // Re-reads when the vault moves, and when the session settles on a
-        // course: detection happens mid-lecture and files under a folder that
-        // may not have existed when this list was scanned. Without the second
-        // key that course is missing from the column for the rest of the
-        // launch — and, since the row is what carries the recording disc, the
-        // running lecture shows nowhere in the sidebar at all.
+        .background(Palette.sheet)
+        // Re-reads when the vault moves, and when the session settles on a course
+        // mid-lecture: detection happens while recording and files under a folder
+        // that may not have existed when this list was scanned.
         .task(id: [session.settings.coursesDir.path(percentEncoded: false), session.course]) {
             await reload()
         }
     }
 
-    // MARK: Sections
+    // MARK: Chrome
 
-    /// A section head is a caption line over a hairline, never a tracked
-    /// uppercase eyebrow (DESIGN.md §5.1).
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Rectangle()
-                .fill(Palette.rule)
-                .frame(height: Spacing.hair)
-            Text("Term")
+    private var title: some View {
+        Text("Lecture Notes")
+            .font(Typography.uiBold)
+            .foregroundStyle(Palette.ink)
+            .padding(.horizontal, Spacing.lg)
+            .padding(.top, Spacing.xl)
+            .padding(.bottom, Spacing.lg)
+    }
+
+    private var courseHeader: some View {
+        Text("Courses")
+            .font(Typography.caption.smallCaps())
+            .tracking(Typography.captionTracking)
+            .foregroundStyle(Palette.inkSoft)
+            .padding(.horizontal, Spacing.lg)
+            .padding(.top, Spacing.xl)
+            .padding(.bottom, Spacing.sm)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    /// The destination, always visible.
+    ///
+    /// It is the most reassuring fact the app can state while a lecture is being
+    /// recorded, and it was previously only in the capture sheet's footer — which
+    /// is to say, invisible from the library, from settings, and from the moment
+    /// you are actually wondering about it.
+    private var destination: some View {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Text("Filing into")
                 .font(Typography.caption.smallCaps())
                 .tracking(Typography.captionTracking)
                 .foregroundStyle(Palette.inkSoft)
-                .padding(.horizontal, Spacing.md)
-                .padding(.top, Spacing.md)
-                .padding(.bottom, Spacing.sm)
+            Text(session.settings.coursesDir.path(percentEncoded: false))
+                .font(Typography.micro)
+                .tracking(Typography.microTracking)
+                .foregroundStyle(Palette.inkSoft)
+                .lineLimit(1)
+                // Head, not tail: the vault name is at the end of the path and it
+                // is the part that says which vault this is.
+                .truncationMode(.head)
         }
-        .accessibilityAddTraits(.isHeader)
+        .padding(.horizontal, Spacing.lg)
+        .padding(.bottom, Spacing.lg)
+        .accessibilityElement(children: .combine)
     }
 
-    private var list: some View {
+    private var courseList: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                ForEach(courses) { course in
+                ForEach(courses) { item in
                     CourseRow(
-                        code: course.code,
-                        name: course.name,
-                        isSelected: selection == course.code,
-                        isRecording: session.phase == .recording && session.course == course.code,
-                        select: { selection = course.code })
+                        code: item.code,
+                        name: item.name,
+                        isSelected: course == item.code && section == .library,
+                        isRecording: session.phase == .recording && session.course == item.code,
+                        select: {
+                            course = item.code
+                            section = .library
+                        })
                 }
             }
         }
     }
 
-    /// An empty column tells a first-run user nothing. The roster file is the
-    /// one action that fills it, so the empty state names it and shows the
-    /// folder it belongs in, selectable so the path can be copied.
-    private var emptyState: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("No courses yet")
-                .font(Typography.ui)
-                .foregroundStyle(Palette.ink)
-            Text("List them in \(rosterFilename), one per line, as “- CS 314H — Data Structures”. Folders already in the vault count too.")
-                .font(Typography.ui)
-                .foregroundStyle(Palette.inkSoft)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(session.settings.coursesDir.path(percentEncoded: false))
-                .font(Typography.micro)
-                .tracking(Typography.microTracking)
-                .foregroundStyle(Palette.inkSoft)
-                .lineLimit(3)
-                .truncationMode(.middle)
-                .textSelection(.enabled)
-        }
-        .padding(.horizontal, Spacing.md)
-        .padding(.top, Spacing.sm)
+    private var emptyCourses: some View {
+        Text("None yet. A course appears once a lecture is filed under it, and you can add them in Settings.")
+            .font(Typography.ui)
+            .foregroundStyle(Palette.inkSoft)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, Spacing.lg)
     }
 
     // MARK: Data
 
     private func reload() async {
         let directory = session.settings.coursesDir
-        // Scanning the vault touches the disk; off the main actor so a slow
+        // Scanning touches the disk; off the main actor so a slow or unmounted
         // network volume cannot stall a frame.
         let found = await Task.detached { CourseDetector.candidates(in: directory) }.value
         courses = found
             .map { Course(code: $0.key, name: $0.value) }
-            .sorted { $0.code.localizedStandardCompare($1.code) == .orderedAscending }
+            .sorted { first, second in
+                // `_Unsorted` is where detection gave up, not a course, so it
+                // trails rather than heading the list on a leading underscore.
+                let firstIsUnsorted = first.code == unsortedFolder
+                let secondIsUnsorted = second.code == unsortedFolder
+                if firstIsUnsorted != secondIsUnsorted { return secondIsUnsorted }
+                return first.code.localizedStandardCompare(second.code) == .orderedAscending
+            }
     }
 }
 
-// MARK: - Row
+// MARK: - Sections
 
-/// One course: plate, code, species (DESIGN.md §5.1).
+/// The three places you can be. Deliberately not an open-ended list: a fourth
+/// entry here would mean the app had grown a fourth job.
+enum AppSection: String, CaseIterable, Identifiable {
+    case record, library, settings
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .record: return "Record"
+        case .library: return "Library"
+        case .settings: return "Settings"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .record: return "record.circle"
+        case .library: return "books.vertical"
+        case .settings: return "slider.horizontal.3"
+        }
+    }
+}
+
+// MARK: - Rows
+
+private struct NavRow: View {
+    let section: AppSection
+    let isSelected: Bool
+    /// A recording in progress. Shown on the Record row whether or not it is
+    /// selected — the whole point is that it is visible from the other two.
+    let isLive: Bool
+    let select: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isHovering = false
+
+    private var fill: Double {
+        if isSelected { return 1 }
+        return isHovering ? 0.5 : 0
+    }
+
+    var body: some View {
+        Button(action: select) {
+            HStack(spacing: Spacing.md) {
+                Image(systemName: section.symbol)
+                    .font(.system(size: 13))
+                    .frame(width: Spacing.lg)
+                Text(section.title)
+                    .font(isSelected ? Typography.uiBold : Typography.ui)
+                Spacer(minLength: 0)
+                if isLive {
+                    Circle()
+                        .fill(Palette.stamp)
+                        .frame(width: Spacing.sm, height: Spacing.sm)
+                }
+            }
+            .foregroundStyle(isSelected ? Palette.ink : Palette.inkSoft)
+            .padding(.horizontal, Spacing.lg)
+            .padding(.vertical, Spacing.sm)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(alignment: .leading) {
+            Palette.wash.opacity(fill)
+            if isSelected {
+                // A lit edge, held clear of the boundary. Flush to the edge it is
+                // a coloured side stripe, which is banned; inset, it reads as
+                // light catching the near edge of a raised row.
+                Rectangle()
+                    .fill(Palette.plate)
+                    .frame(width: Spacing.plateBorderOuter)
+                    .padding(.vertical, Spacing.xs)
+                    .padding(.leading, Spacing.xs)
+            }
+        }
+        .animation(Motion.settle.animation(reduceMotion: reduceMotion), value: fill)
+        .onHover { isHovering = $0 }
+        .accessibilityLabel(section.title)
+        .accessibilityValue(isLive ? "Recording" : "")
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+}
+
+/// One course: its scene, its code, and whether it is live.
+///
+/// The scene replaces the Köhler plate that identified a course before. A
+/// botanical engraving at 26pt was a blot; a graded forest photograph at 26pt is
+/// still recognisably a place, which is the whole job this element has.
 private struct CourseRow: View {
     let code: String
     let name: String
@@ -136,134 +253,74 @@ private struct CourseRow: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovering = false
 
-    /// 56pt, with no single token at that value: `xxl` for the 32pt plate plus
-    /// `xl` for the padding either side of it.
-    private static let rowHeight = Spacing.xxl + Spacing.xl
+    private static let thumbnail: CGFloat = 26
 
-    /// DESIGN.md §5.1 sets the silhouette at 85%: full-strength `inkSoft`
-    /// linework at 32pt reads as a blot rather than a plant.
-    /// Pulled well back: at full saturation three colour plates in a row
-    /// turn the sidebar into a swatch book and outshout the course codes.
-    private static let plateSaturation: Double = 0.35
+    private var scene: Backdrop? { Scenery.scene(for: code) }
 
-    private static let silhouetteOpacity = 0.85
-
-    /// The 6pt recording disc. The scale stops at `sm`; 6pt is `sm` less two
-    /// hairlines, which is how the value is spelled rather than as a literal.
-    private static let discDiameter = Spacing.sm - Spacing.hair * 2
-
-    private var plate: Plate? { PlateAssignment.plate(for: code) }
-
-    /// Selected is a full `wash` fill; hover is the same fill at half strength.
-    /// No movement and no scale — things settle onto the board, they do not
-    /// slide (DESIGN.md §6).
     private var fill: Double {
         if isSelected { return 1 }
         return isHovering ? 0.5 : 0
     }
 
+    /// `_Unsorted` is a folder name, not a course name, and the one value here
+    /// that was never typed by a person.
+    private var displayName: String {
+        code == unsortedFolder ? "Unsorted" : code
+    }
+
     var body: some View {
         Button(action: select) {
             HStack(spacing: Spacing.md) {
-                silhouette
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    Text(code)
-                        .font(isSelected ? Typography.uiBold : Typography.ui)
-                        .foregroundStyle(Palette.ink)
-                        .lineLimit(1)
-                    if let plate {
-                        // The determination line: quiet, italic, a binomial set
-                        // the way it is set on a herbarium label.
-                        Text(plate.species)
-                            .font(Typography.caption)
-                            .italic()
-                            .tracking(Typography.captionTracking)
-                            .foregroundStyle(Palette.inkSoft)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                    }
-                }
+                thumbnailView
+                Text(displayName)
+                    .font(isSelected ? Typography.uiBold : Typography.ui)
+                    .foregroundStyle(isSelected || isRecording ? Palette.ink : Palette.inkSoft)
+                    .lineLimit(1)
                 Spacer(minLength: 0)
-                if isRecording { recordingDisc }
+                if isRecording {
+                    Circle()
+                        .fill(Palette.stamp)
+                        .frame(width: Spacing.sm, height: Spacing.sm)
+                }
             }
-            .padding(.horizontal, Spacing.md)
+            .padding(.horizontal, Spacing.lg)
             .padding(.vertical, Spacing.sm)
-            .frame(height: Self.rowHeight, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .background(alignment: .leading) {
             Palette.wash.opacity(fill)
             if isSelected {
-                // An inset rule that closes the plate on its inside edge — held
-                // clear of the row's own edge, because a rule flush to the
-                // boundary is a coloured side stripe, which is banned.
                 Rectangle()
                     .fill(Palette.plate)
                     .frame(width: Spacing.plateBorderOuter)
-                    .padding(.vertical, Spacing.sm)
+                    .padding(.vertical, Spacing.xs)
                     .padding(.leading, Spacing.xs)
             }
         }
         .animation(Motion.settle.animation(reduceMotion: reduceMotion), value: fill)
         .onHover { isHovering = $0 }
-        // Set on the Button rather than on a synthesised element, so the row
-        // keeps its activation point for VoiceOver and Full Keyboard Access.
-        .accessibilityLabel(accessibilityLabel)
+        .accessibilityLabel(name.isEmpty ? displayName : "\(displayName), \(name)")
         .accessibilityValue(isRecording ? "Recording" : "")
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-        .help(name.isEmpty ? code : "\(code) — \(name)")
+        .help(name.isEmpty ? displayName : "\(displayName) — \(name)")
     }
 
-    /// The plate itself, small, as the course's identity.
-    ///
-    /// DESIGN.md asks for a monochrome silhouette, and two attempts at one were
-    /// made with `luminanceToAlpha`. Both produced a solid filled square, and
-    /// the reason is the source material rather than the technique: a Köhler
-    /// plate is a dense colour illustration filling its frame, not sparse
-    /// linework on white paper, so there is no threshold that leaves a
-    /// recognisable outline. Showing the plate is also truer to a herbarium
-    /// sheet, where the specimen is the identifier.
-    ///
-    /// Held quiet so it identifies without competing with the course code:
-    /// desaturated toward the board and inset in a hairline mount.
-    @ViewBuilder private var silhouette: some View {
-        if let plate {
-            plate.image
-                .resizable()
-                .scaledToFill()
-                .frame(width: Spacing.xxl, height: Spacing.xxl)
-                .clipped()
-                .saturation(Self.plateSaturation)
-                .opacity(Self.silhouetteOpacity)
-                .overlay {
-                    Rectangle().strokeBorder(Palette.rule, lineWidth: Spacing.hair)
-                }
-                .accessibilityHidden(true)   // the species name carries this
-        } else {
-            // Keeps the identity column aligned when a plate is missing: an
-            // empty mount reads as absence, a collapsed row reads as a bug.
-            Rectangle()
-                .strokeBorder(Palette.rule, lineWidth: Spacing.hair)
-                .frame(width: Spacing.xxl, height: Spacing.xxl)
+    @ViewBuilder private var thumbnailView: some View {
+        ZStack {
+            Palette.wash
+            if let scene {
+                scene.image
+                    .resizable()
+                    .scaledToFill()
+                    // Held back so a column of them identifies without turning
+                    // into a strip of postcards competing with the course codes.
+                    .saturation(0.75)
+                    .opacity(0.9)
+            }
         }
-    }
-
-    /// Cinnabar, first of its three permitted uses (the live recording
-    /// indicator; DESIGN.md §2). The disc is present only
-    /// while this course is recording, so the state is carried by a mark
-    /// appearing at all — shape, not hue — and it is named in the row's
-    /// accessibility value and tooltip for anyone who reads neither.
-    private var recordingDisc: some View {
-        Circle()
-            .fill(Palette.stamp)
-            .frame(width: Self.discDiameter, height: Self.discDiameter)
-            .help("Recording")
-    }
-
-    private var accessibilityLabel: String {
-        var parts = [name.isEmpty ? code : "\(code), \(name)"]
-        if let plate { parts.append("plate, \(plate.species)") }
-        return parts.joined(separator: ". ")
+        .frame(width: Self.thumbnail, height: Self.thumbnail)
+        .clipShape(RoundedRectangle(cornerRadius: Spacing.xs))
+        .accessibilityHidden(true)   // the course code carries this
     }
 }

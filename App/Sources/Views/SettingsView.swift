@@ -42,6 +42,20 @@ struct SettingsView: View {
     /// The course the worked example is filed under when nothing is pinned.
     private static let exampleCourse = "Analysis II"
 
+    @State private var roster: [RosterEntry] = []
+    @State private var newCourseCode = ""
+    @State private var newCourseName = ""
+    @State private var rosterError: String?
+
+    /// A course as this screen sees it: on the roster, in the vault, or both.
+    struct RosterEntry {
+        let code: String
+        let name: String
+        /// False for a course that exists only as a folder. Those cannot be
+        /// removed from here, because removing them means deleting lectures.
+        let inRoster: Bool
+    }
+
     var body: some View {
         ScrollView {
             sheet
@@ -51,11 +65,60 @@ struct SettingsView: View {
                 .padding(.vertical, Spacing.plate)
         }
         .background(BoardBackground())
+        .task(id: session.settings.coursesDir.path(percentEncoded: false)) { await loadRoster() }
+    }
+
+    // MARK: Roster
+
+    private func loadRoster() async {
+        let directory = session.settings.coursesDir
+        let (written, folders) = await Task.detached {
+            (CourseDetector.readRoster(in: directory), CourseDetector.candidates(in: directory))
+        }.value
+
+        roster = Set(written.keys).union(folders.keys)
+            .map { RosterEntry(code: $0, name: written[$0] ?? folders[$0] ?? "", inRoster: written[$0] != nil) }
+            .sorted { first, second in
+                let firstIsUnsorted = first.code == unsortedFolder
+                let secondIsUnsorted = second.code == unsortedFolder
+                if firstIsUnsorted != secondIsUnsorted { return secondIsUnsorted }
+                return first.code.localizedStandardCompare(second.code) == .orderedAscending
+            }
+    }
+
+    private func addCourse() {
+        let code = newCourseCode.trimmingCharacters(in: .whitespaces)
+        guard !code.isEmpty else { return }
+        var written = Dictionary(uniqueKeysWithValues: roster.filter(\.inRoster).map { ($0.code, $0.name) })
+        written[code] = newCourseName.trimmingCharacters(in: .whitespaces)
+        commitRoster(written)
+        newCourseCode = ""
+        newCourseName = ""
+    }
+
+    private func removeCourse(_ code: String) {
+        var written = Dictionary(uniqueKeysWithValues: roster.filter(\.inRoster).map { ($0.code, $0.name) })
+        written.removeValue(forKey: code)
+        commitRoster(written)
+    }
+
+    /// Writes and re-reads. Re-reading rather than mutating the local array is
+    /// what makes the screen show what is actually in the file — including a
+    /// course that stayed listed because it still has a folder.
+    private func commitRoster(_ written: [String: String]) {
+        do {
+            try RosterWriter.write(written, in: session.settings.coursesDir)
+            rosterError = nil
+            Task { await loadRoster() }
+        } catch {
+            rosterError = "Couldn't write the roster: \(error.localizedDescription)"
+        }
     }
 
     private var sheet: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             destination
+            courseSection
             mirrorSection
             modelSection
             recordingSection
@@ -127,6 +190,75 @@ struct SettingsView: View {
         }
         .padding(.top, Spacing.sm)
         .accessibilityElement(children: .combine)
+    }
+
+    // MARK: - Courses
+
+    /// The roster, editable here rather than only in Obsidian.
+    ///
+    /// Detection reads this list, so keeping it current is what makes a lecture
+    /// land in the right folder — and until now the only way to edit it was to
+    /// open `courses.md` in another app. Folders in the vault are courses too and
+    /// are shown greyed with no delete: this list writes one file, and a folder
+    /// full of lectures is not something a settings screen should offer to
+    /// remove.
+    private var courseSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            head("Courses")
+
+            Text("Detection picks from this list. A course with a folder in the vault is listed whether or not it is written here.")
+                .font(Typography.ui)
+                .foregroundStyle(Palette.inkSoft)
+                .fixedSize(horizontal: false, vertical: true)
+
+            ForEach(roster, id: \.code) { entry in
+                courseRow(entry)
+            }
+
+            HStack(spacing: Spacing.md) {
+                FieldText(
+                    value: newCourseCode, name: "New course code",
+                    prompt: "CS 314H", width: 160,
+                    commit: { text in newCourseCode = text; return text })
+                FieldText(
+                    value: newCourseName, name: "New course name",
+                    prompt: "Data Structures", width: 240,
+                    commit: { text in newCourseName = text; return text })
+                action("Add") { addCourse() }
+                    .disabled(newCourseCode.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+
+            if let rosterError {
+                Text(rosterError)
+                    .font(Typography.ui)
+                    .foregroundStyle(Palette.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func courseRow(_ entry: RosterEntry) -> some View {
+        HStack(spacing: Spacing.md) {
+            Text(entry.code == unsortedFolder ? "Unsorted" : entry.code)
+                .font(Typography.ui)
+                .foregroundStyle(Palette.ink)
+                .frame(width: 160, alignment: .leading)
+            Text(entry.name.isEmpty ? "—" : entry.name)
+                .font(Typography.ui)
+                .foregroundStyle(Palette.inkSoft)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            if entry.inRoster {
+                action("Remove") { removeCourse(entry.code) }
+            } else {
+                // A folder, not a roster line. Saying so is the point: otherwise
+                // the absence of a Remove button reads as a bug.
+                Text("folder")
+                    .font(Typography.micro)
+                    .tracking(Typography.microTracking)
+                    .foregroundStyle(Palette.inkSoft)
+            }
+        }
+        .accessibilityElement(children: .contain)
     }
 
     // MARK: - Mirrors

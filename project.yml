@@ -79,6 +79,12 @@ targets:
       - path: Assets/Plates
         type: folder
         buildPhase: resources
+      # Same reason as the plates above, and the same failure when it is missing:
+      # the hero band renders as flat black and every course thumbnail is an
+      # empty square, which looks like a design decision rather than a build one.
+      - path: Assets/Scenery
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: LectureKit
         product: LectureKit

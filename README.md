@@ -31,16 +31,17 @@ mounting board in daylight; dark is the same sheet under a lamp at 11pm, which
 is when a first-year actually reads a lecture back. The design system is written
 up in [DESIGN.md](DESIGN.md).
 
-**Recording.** The transcript arrives as it is confirmed. The cinnabar stamp is
-the only pigment in the app, and recording is one of the four things it is
-allowed to mark.
+**Recording.** One screen for both states: the same hero, title and button
+whether you are about to record or already are, because the moment they change is
+the moment a lecture is starting and swapping the pane out then is how you lose
+your place. The transcript arrives as it is confirmed.
 
-| Light | Dark |
+| Idle | Recording |
 |---|---|
-| ![Capture panel, recording, light appearance](Snapshots/capture-recording-light.png) | ![Capture panel, recording, dark appearance](Snapshots/capture-recording-dark.png) |
+| ![Record screen, idle](Snapshots/record-idle-dark.png) | ![Record screen, recording](Snapshots/record-live-dark.png) |
 
 **The library.** A term of lectures as a collection. Courses are told apart by
-their botanical plate, not by a colour.
+their scene, not by a colour.
 
 | Light | Dark |
 |---|---|
@@ -241,11 +242,18 @@ Swift 6 strict concurrency is on across both the package and the app.
 
 ## Credits and licences
 
-The botanical plates in `Assets/Plates/` are from **Köhler's
-*Medizinal-Pflanzen*** (1887), which is **public domain**; they reach the repo
-via Wikimedia Commons, with per-plate provenance in
-[`Assets/Plates/plates.json`](Assets/Plates/plates.json). Each course is
-assigned one deterministically from its course code.
+The scenery in `Assets/Scenery/` was **generated with ChatGPT** to this project's
+brief, with per-image provenance in
+[`Assets/Scenery/scenery.json`](Assets/Scenery/scenery.json). Note what that does
+and does not give you: OpenAI assigns output ownership to the account that
+generated it, so these images are not under an open licence and a fork does not
+inherit a licence to them. Regenerate your own, or point
+[`Tools/fetch-scenery.py`](Tools/fetch-scenery.py) at Wikimedia Commons — it is
+still here, and it verifies the licence of every file it keeps.
+
+`Assets/Plates/` still holds the **Köhler *Medizinal-Pflanzen*** (1887) plates,
+public domain, from the earlier herbarium direction. Nothing in the app draws
+them any more.
 
 Dependencies:
 
@@ -253,6 +261,8 @@ Dependencies:
 - [swift-markdown](https://github.com/swiftlang/swift-markdown) — Apache 2.0 with
   Runtime Library Exception
 
-The visual direction is after Jan Wandelaar's uncoloured copperplate engravings
-for Linnaeus's *Hortus Cliffortianus* (Amsterdam, 1738). No plates from that
-work are reproduced here; only its discipline.
+The visual direction is a dark rainforest interior at dusk: near-black grounds
+with green in them, a photograph carrying the mood, and one warm light. It
+replaced a Victorian herbarium direction — botanical plates on aged rag board —
+which was the right idea for *nature* and the wrong one for this. A herbarium
+sheet is a specimen pinned in a museum drawer.
