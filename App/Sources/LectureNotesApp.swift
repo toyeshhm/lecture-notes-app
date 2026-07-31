@@ -37,6 +37,16 @@ struct LectureNotesApp: App {
                 .environment(session)
         } label: {
             // A template image so macOS tints it for light/dark menu bars.
+            //
+            // The design asks for the active course's plate here, as the sidebar
+            // does, and it is not reachable from these assets. A menu bar item is
+            // a monochrome alpha mask at 18pt, and a Köhler plate is a dense
+            // colour illustration filling its frame: the same thing that defeated
+            // `luminanceToAlpha` in `SidebarView.silhouette` defeats it harder at
+            // a tenth the size. The sidebar could fall back to showing the plate
+            // itself; the menu bar cannot, because tinting a photograph to a
+            // single channel is a blot. It stays an SF Symbol until there is
+            // per-course line art drawn for it.
             Label(session.menuBarTitle, systemImage: session.menuBarSymbol)
                 // `menuBarTitle` is empty except while recording or writing, so
                 // without this the app's primary control announces as its raw

@@ -126,6 +126,7 @@ struct MenuBarView: View {
 
             Text(session.settings.finalModel)
                 .font(Typography.micro)
+                .tracking(Typography.microTracking)
                 .foregroundStyle(Palette.inkSoft)
         }
     }

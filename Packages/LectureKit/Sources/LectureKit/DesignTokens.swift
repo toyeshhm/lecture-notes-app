@@ -244,8 +244,30 @@ public enum Typography {
 
     // MARK: Setting
 
-    /// Tracking for the small-caps caption line, in points at 13pt (+0.06em).
+    // Tracking, in points at each token's own size, from the `DESIGN.md` §3 scale
+    // table. SwiftUI carries tracking on the view rather than on the `Font`, so
+    // these cannot be folded into the tokens above and every call site that sets
+    // one of these faces sets its tracking beside it.
+    //
+    // The display face tightens as it grows and the mono opens up at 11pt, which
+    // is the ordinary correction: Bluu Next's fitting is drawn for text sizes and
+    // gaps at 35pt, and Commit Mono's advance width is generous for its cap height
+    // once the glyphs are small enough to be scanned rather than read.
+
+    /// +0.02em at 11pt.
+    public static let microTracking: CGFloat = 0.22
+
+    /// +0.06em at 13pt.
     public static let captionTracking: CGFloat = 0.78
+
+    /// −0.01em at 28pt.
+    public static let h2Tracking: CGFloat = -0.28
+
+    /// −0.015em at 35pt.
+    public static let h1Tracking: CGFloat = -0.53
+
+    /// −0.02em at 44pt.
+    public static let plateTitleTracking: CGFloat = -0.88
 
     /// Extra leading for 17pt body prose, in points.
     ///

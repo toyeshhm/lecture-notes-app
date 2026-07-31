@@ -52,7 +52,7 @@ struct SpecimenLabel: View {
     @ViewBuilder
     private var typed: some View {
         if let detail {
-            Text(detail).font(Typography.micro)
+            Text(detail).font(Typography.micro).tracking(Typography.microTracking)
         }
     }
 }

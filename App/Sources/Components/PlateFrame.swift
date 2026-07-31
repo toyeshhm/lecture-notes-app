@@ -102,6 +102,7 @@ private struct PlateFramePreview: View {
         VStack(alignment: .leading, spacing: Spacing.xl) {
             Text("Kolmogorov Complexity")
                 .font(Typography.h2)
+                .tracking(Typography.h2Tracking)
                 .foregroundStyle(Palette.ink)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .plateFrame()

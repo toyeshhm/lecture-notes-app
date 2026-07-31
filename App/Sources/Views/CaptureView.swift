@@ -91,6 +91,7 @@ struct CaptureView: View {
             }
             Text(session.topic)
                 .font(Typography.h1)
+                .tracking(Typography.h1Tracking)
                 .foregroundStyle(Palette.ink)
                 // The sheet's only heading, so it is the rotor's only landmark.
                 .accessibilityAddTraits(.isHeader)
@@ -195,6 +196,7 @@ struct CaptureView: View {
     private var footer: some View {
         Text(session.notePath?.path(percentEncoded: false) ?? "Not filed yet — the path appears once the course is detected.")
             .font(Typography.micro)
+            .tracking(Typography.microTracking)
             .foregroundStyle(Palette.inkSoft)
             .lineLimit(1)
             .truncationMode(.middle)

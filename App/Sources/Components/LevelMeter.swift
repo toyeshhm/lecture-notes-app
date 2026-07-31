@@ -36,6 +36,7 @@ struct LevelMeter: View {
             scale
             Text("\(reading)%")
                 .font(Typography.micro)
+                .tracking(Typography.microTracking)
                 // Tabular figures: the width of the reading must not twitch either.
                 .monospacedDigit()
                 .foregroundStyle(Palette.inkSoft)

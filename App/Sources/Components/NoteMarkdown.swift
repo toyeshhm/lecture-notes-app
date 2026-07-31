@@ -226,6 +226,9 @@ extension NoteBlock {
         case let .heading(level, inline):
             SwiftUI.Text(inline)
                 .font(level <= 2 ? Typography.h2 : Typography.h3)
+                // `h3` is Charter and tracks at zero; only the display face at
+                // `h2` is tightened.
+                .tracking(level <= 2 ? Typography.h2Tracking : 0)
                 .foregroundStyle(Palette.ink)
                 .frame(maxWidth: measure, alignment: .leading)
                 .padding(.top, level <= 2 ? Spacing.lg : Spacing.sm)

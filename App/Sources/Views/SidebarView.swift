@@ -100,6 +100,7 @@ struct SidebarView: View {
                 .fixedSize(horizontal: false, vertical: true)
             Text(session.settings.coursesDir.path(percentEncoded: false))
                 .font(Typography.micro)
+                .tracking(Typography.microTracking)
                 .foregroundStyle(Palette.inkSoft)
                 .lineLimit(3)
                 .truncationMode(.middle)
