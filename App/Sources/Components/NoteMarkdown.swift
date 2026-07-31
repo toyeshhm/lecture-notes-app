@@ -232,6 +232,10 @@ extension NoteBlock {
                 .foregroundStyle(Palette.ink)
                 .frame(maxWidth: measure, alignment: .leading)
                 .padding(.top, level <= 2 ? Spacing.lg : Spacing.sm)
+                // Without this a note is one flat run of paragraphs to VoiceOver
+                // and the rotor's heading list is empty, which is how you read
+                // forty thousand words with no way to skip a section.
+                .accessibilityAddTraits(.isHeader)
 
         case let .paragraph(inline):
             SwiftUI.Text(inline)
@@ -248,11 +252,17 @@ extension NoteBlock {
                             .font(ordered ? Typography.ui : Typography.bodyText)
                             .foregroundStyle(Palette.inkSoft)
                             .frame(minWidth: Spacing.lg, alignment: .trailing)
+                            // A numeral is part of what the item says; the dash
+                            // is the mark that makes it a list, and spoken it is
+                            // just "dash" in front of every line.
+                            .accessibilityHidden(!ordered)
                         SwiftUI.Text(item)
                             .font(Typography.bodyText)
                             .foregroundStyle(Palette.ink)
                             .textSelection(.enabled)
                     }
+                    // One item is one idea, not a marker stop and a text stop.
+                    .accessibilityElement(children: .combine)
                 }
             }
             .frame(maxWidth: measure, alignment: .leading)
@@ -272,7 +282,7 @@ extension NoteBlock {
             .padding(.leading, Spacing.lg)
             .frame(maxWidth: measure, alignment: .leading)
 
-        case let .code(code, _):
+        case let .code(code, language):
             // Wide content is the explicit exception to the measure, and scrolls
             // inside its own container rather than widening the sheet.
             ScrollView(.horizontal, showsIndicators: false) {
@@ -284,6 +294,17 @@ extension NoteBlock {
             }
             .background(Palette.wash)
             .overlay { Rectangle().strokeBorder(Palette.rule, lineWidth: Spacing.hair) }
+            // A 100-column block is core material here (PRODUCT.md), so the part
+            // hanging off the right edge has to be reachable without a trackpad.
+            // Focus is what puts a scroll view in the responder chain, and macOS
+            // 14 draws the ring around it, so the stop is visible as well as
+            // reachable.
+            .focusable()
+            // `.contain` rather than `.combine`: the code itself stays one
+            // navigable element, and the group only announces what it is, which
+            // is the thing a reader cannot infer from a monospaced voice.
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(language.map { "\($0) code" } ?? "Code")
 
         case let .table(head, rows):
             ScrollView(.horizontal, showsIndicators: false) {
@@ -293,16 +314,27 @@ extension NoteBlock {
                             SwiftUI.Text(cell)
                                 .font(Typography.uiBold)
                                 .foregroundStyle(Palette.ink)
+                                .accessibilityAddTraits(.isHeader)
                         }
                     }
                     Rectangle().fill(Palette.rule).frame(height: Spacing.hair)
                         .gridCellColumns(max(head.count, 1))
                     ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                         GridRow {
-                            ForEach(Array(row.enumerated()), id: \.offset) { _, cell in
+                            ForEach(Array(row.enumerated()), id: \.offset) { column, cell in
                                 SwiftUI.Text(cell)
                                     .font(Typography.ui)
                                     .foregroundStyle(Palette.inkSoft)
+                                    // A six-column complexity table read cell by
+                                    // cell is six numbers with nothing saying
+                                    // which column each came from, and combining
+                                    // the row instead makes one run-on sentence.
+                                    // Carrying the header into the cell is what
+                                    // keeps "O(log n)" attached to "Average".
+                                    .accessibilityLabel(
+                                        column < head.count && !head[column].isEmpty
+                                            ? "\(head[column]), \(cell)"
+                                            : cell)
                             }
                         }
                     }
@@ -327,9 +359,9 @@ private struct CalloutBlock: View {
     let paragraphs: [AttributedString]
     let measure: CGFloat
 
-    /// Only `important` earns cinnabar, and only because it marks examinable
-    /// material — the second of the pigment's three permitted uses. Everything
-    /// else is set in ink, so the colour keeps meaning something.
+    /// `important` and `warning` are the two kinds Obsidian's callouts use for
+    /// examinable material; every other kind is a plain slip, so the mark keeps
+    /// meaning something.
     private var isExaminable: Bool {
         kind == "important" || kind == "warning"
     }
@@ -343,10 +375,15 @@ private struct CalloutBlock: View {
                         .frame(width: Spacing.sm, height: Spacing.sm)
                         .accessibilityHidden(true)
                 }
+                // The slip sits on `wash`, and `stamp` is never text on `wash`
+                // (3.80:1 in dark, under the 4.5:1 floor — DESIGN.md §2, §7).
+                // The pigment stays on the disc and the left rule, which are
+                // marks and legal on any plane; the title takes the value step
+                // from `inkSoft` to `ink` instead.
                 SwiftUI.Text(title.isEmpty ? kind.capitalized : title)
                     .font(Typography.caption.smallCaps())
                     .tracking(Typography.captionTracking)
-                    .foregroundStyle(isExaminable ? Palette.stamp : Palette.inkSoft)
+                    .foregroundStyle(isExaminable ? Palette.ink : Palette.inkSoft)
             }
             ForEach(Array(paragraphs.enumerated()), id: \.offset) { _, paragraph in
                 SwiftUI.Text(paragraph)
@@ -367,7 +404,13 @@ private struct CalloutBlock: View {
         }
         // Colour alone never carries the meaning: the slip is titled, so an
         // examinable note reads as examinable in greyscale too.
-        .accessibilityElement(children: .combine)
+        //
+        // `.contain`, not `.combine`. Combining flattened the slip into one
+        // element and the label below then replaced it outright, so the body
+        // paragraphs — the part that is actually on the exam — were spoken
+        // nowhere. As a labelled group the title announces the slip and the
+        // paragraphs stay navigable inside it.
+        .accessibilityElement(children: .contain)
         .accessibilityLabel(isExaminable ? "Likely on exam. \(title)" : title)
     }
 }

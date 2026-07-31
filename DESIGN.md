@@ -52,12 +52,26 @@ budget.
 ### Colour discipline
 
 There is one pigment: **cinnabar**, borrowed from the red determination stamp
-that marks a herbarium's authoritative specimen. It appears in exactly three
+that marks a herbarium's authoritative specimen. It appears in exactly four
 places and nowhere else:
 
 1. The live recording indicator.
 2. The type-specimen mark on the canonical lecture of a course.
 3. Destructive confirmations (the stamp only; the copy sets in `ink`).
+4. The examinable mark on a note's `> [!important]` callout — the disc and the
+   inset rule of the determination slip, never its words.
+
+The fourth was three until the reader shipped, and the honest options were to
+strike the mark or to widen the list. It stays because it is the same act as (2)
+one level down: a determination that *this* is the authoritative thing in the
+sheet, made by the lecturer rather than by the filing. A student scanning a term
+of notes for what is on the exam is doing the only visual search this app is
+built to serve, and refusing it the pigment to keep a count at three would be
+tidiness bought with the product's most useful signal.
+
+It is still not colour-only. The slip carries a title, an inset rule and its own
+ground, so it reads as examinable in greyscale and announces as a labelled group
+to VoiceOver.
 
 Course identity is **not** a hue. Each course carries its own Köhler botanical
 plate from `Assets/Plates/`, rendered as a monochrome silhouette. Twelve courses

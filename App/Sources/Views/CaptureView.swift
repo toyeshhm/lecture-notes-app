@@ -127,13 +127,21 @@ struct CaptureView: View {
             Circle().strokeBorder(Palette.rule, lineWidth: Spacing.hair)
             if isRecording {
                 if reduceMotion {
-                    // No pulse under Reduce Motion. The disc alternates present
-                    // and absent at 1Hz instead: still unmistakably live, with
-                    // nothing in motion.
+                    // No pulse under Reduce Motion. The disc alternates filled and
+                    // hollow at 1Hz instead (DESIGN.md §6): still unmistakably
+                    // live, with nothing in motion.
+                    //
+                    // Hollow is a cinnabar outline at the same 10pt, not an absent
+                    // disc. Dropping the disc leaves only the `rule` ring, which
+                    // measures 1.47:1 on the dark sheet — the off half would be
+                    // invisible there, and a mark that alternates between present
+                    // and nothing reads as a flash rather than as two shapes.
                     TimelineView(.periodic(from: .now, by: 0.5)) { context in
-                        disc.opacity(
-                            Int(context.date.timeIntervalSinceReferenceDate * 2).isMultiple(of: 2) ? 1 : 0
-                        )
+                        if Int(context.date.timeIntervalSinceReferenceDate * 2).isMultiple(of: 2) {
+                            disc
+                        } else {
+                            hollowDisc
+                        }
                     }
                 } else {
                     disc
@@ -157,6 +165,15 @@ struct CaptureView: View {
             .frame(width: Self.discDiameter, height: Self.discDiameter)
     }
 
+    /// The off half of the Reduce Motion alternation: the same disc, hollow.
+    /// `stamp` is legal here because a 1pt outline is a mark and not text
+    /// (DESIGN.md §2), and it measures 4.66:1 at its worst plane.
+    private var hollowDisc: some View {
+        Circle()
+            .strokeBorder(Palette.stamp, lineWidth: Spacing.hair)
+            .frame(width: Self.discDiameter, height: Self.discDiameter)
+    }
+
     private var pulseAnimation: Animation? {
         Motion.pulse.animation(reduceMotion: reduceMotion)?.repeatForever(autoreverses: true)
     }
@@ -165,7 +182,12 @@ struct CaptureView: View {
 
     private var rawTranscript: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            SpecimenLabel(title: "Raw speech · discarded and re-transcribed when you stop")
+            SpecimenLabel(title: "Raw speech · replaced by a fuller pass when you stop")
+                // The group's own label already says this, and `SpecimenLabel`
+                // combines itself into a leaf — so left visible to VoiceOver the
+                // same sentence is announced twice, back to back, before the
+                // transcript it introduces.
+                .accessibilityHidden(true)
             Text(transcriptTail)
                 .font(Typography.ui)
                 .italic()   // provisional by shape, not only by weight of colour
@@ -176,7 +198,13 @@ struct CaptureView: View {
         // .contain, not .combine: the transcript itself must stay readable to
         // VoiceOver rather than being collapsed into the caption.
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Raw transcript, provisional. Replaced by a full pass when the recording stops.")
+        // Says what the caption above it says. "A full pass" is a word for the
+        // pipeline, not for the student, and it is not on screen for Voice
+        // Control to match against either.
+        // "Replaced", not "discarded": `SessionModel.stop()` re-transcribes through
+        // `try?`, and when that fails the streaming text is what gets filed. The
+        // stronger verb would be a claim the pipeline does not always honour.
+        .accessibilityLabel("Raw speech, provisional. Replaced by a fuller pass when you stop.")
     }
 
     /// The tail of the stream, without walking the whole string: `count` on a
@@ -194,7 +222,7 @@ struct CaptureView: View {
     // MARK: Footer
 
     private var footer: some View {
-        Text(session.notePath?.path(percentEncoded: false) ?? "Not filed yet — the path appears once the course is detected.")
+        Text(session.notePath?.path(percentEncoded: false) ?? "Not filed yet. The path appears once the course is detected.")
             .font(Typography.micro)
             .tracking(Typography.microTracking)
             .foregroundStyle(Palette.inkSoft)
@@ -278,8 +306,9 @@ private struct NotesSection: View {
                     Speech is recognised on this Mac and appears below as raw text \
                     within a few seconds. Every few minutes it is rewritten into \
                     structured notes here, on this sheet. When you stop, the whole \
-                    lecture is transcribed again in one pass, the notes are written \
-                    in full, and the file is filed under its course in your vault.
+                    lecture is transcribed again from the beginning, the notes are \
+                    written in full, and the file is filed under its course in your \
+                    vault.
                     """
                 )
                 .font(Typography.bodyText)

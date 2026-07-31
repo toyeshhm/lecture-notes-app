@@ -168,9 +168,12 @@ struct FirstRunView: View {
         switch (row.id, row.state) {
         case ("microphone", .fail):
             if let pane = Self.microphonePane {
-                Button("Open Privacy & Security") { NSWorkspace.shared.open(pane) }
+                // The URL lands on the Microphone list, not on the pane's root, so
+                // the label names where the button actually goes. The check's own
+                // detail line already gives the full path through System Settings.
+                Button("Open the Microphone list") { NSWorkspace.shared.open(pane) }
                     .buttonStyle(SlipButtonStyle(reduceMotion: reduceMotion))
-                    .accessibilityHint("Opens the Microphone list in System Settings")
+                    .accessibilityHint("Opens System Settings at Privacy & Security, scrolled to the microphone switches")
             }
 
         case ("vault", .fail):
@@ -328,7 +331,9 @@ struct FirstRunView: View {
         if checks.isEmpty { return "Checking what this Mac can do." }
         if blocking.isEmpty {
             return checks.contains(where: { $0.state == .warn })
-                ? "Nothing here stops a recording. The notes below are worth reading once."
+                // "Notes" is the app's own word for what it writes, so it cannot
+                // also mean the lines on this slip.
+                ? "Nothing here stops a recording. The warnings below are worth reading once."
                 : "Everything a recording needs is in place."
         }
         let names = blocking.formatted(.list(type: .and))

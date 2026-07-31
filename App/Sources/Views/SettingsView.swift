@@ -96,7 +96,7 @@ struct SettingsView: View {
 
             textRow(
                 "Courses folder", value: session.settings.coursesSubdir, prompt: "Courses",
-                hint: "Inside the vault. May be nested, as “02 Areas/Courses”."
+                hint: "Inside the vault. May be nested, like 02 Areas/Courses."
             ) { text in update { $0.coursesSubdir = text } }
 
             textRow(
@@ -213,14 +213,16 @@ struct SettingsView: View {
 
             textRow(
                 "Courses folder", value: mirror.coursesSubdir, prompt: "Courses",
-                hint: "Inside this vault. May be nested, like 02 Areas/Courses."
+                hint: "Inside this vault. May be nested, like 02 Areas/Courses.",
+                named: "Mirror \(index + 1) courses folder"
             ) { text in
                 updateMirror(index) { $0.coursesSubdir = text }
             }
 
             textRow(
                 "Lectures folder", value: mirror.lecturesSubdir, prompt: "Lectures",
-                hint: "Inside each course folder."
+                hint: "Inside each course folder.",
+                named: "Mirror \(index + 1) lectures folder"
             ) { text in
                 updateMirror(index) { $0.lecturesSubdir = text }
             }
@@ -235,7 +237,7 @@ struct SettingsView: View {
 
             Row(
                 label: "Frontmatter",
-                hint: "Merged into this copy's YAML header — marking it agent-generated, say."
+                hint: "Merged into this copy's YAML header. Marking it agent-generated, say."
             ) {
                 frontmatter(index: index, pairs: mirror.frontmatter)
             }
@@ -249,8 +251,10 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             ForEach(pairs.keys.sorted(), id: \.self) { key in
                 HStack(spacing: Spacing.sm) {
-                    field(key, prompt: "key", width: Spacing.mount * 2) { rename(index: index, from: key, to: $0) }
-                    field(pairs[key] ?? "", prompt: "value", width: Spacing.mount * 2) { text in
+                    field(key, named: "Frontmatter key", prompt: "key", width: Spacing.mount * 2) {
+                        rename(index: index, from: key, to: $0)
+                    }
+                    field(pairs[key] ?? "", named: "Value for \(key)", prompt: "value", width: Spacing.mount * 2) { text in
                         updateMirror(index) { $0.frontmatter[key] = text }
                         return text
                     }
@@ -331,7 +335,7 @@ struct SettingsView: View {
             ) { alias in update { $0.finalModel = alias } }
             modelRow(
                 "Detect model", value: session.settings.detectModel,
-                hint: "Names the course and the topic from the first minutes of speech."
+                hint: "Names the course and the topic from what was said."
             ) { alias in update { $0.detectModel = alias } }
         }
     }
@@ -341,7 +345,7 @@ struct SettingsView: View {
     ) -> some View {
         Row(label: label, hint: hint) {
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                field(value, prompt: "sonnet") { text in
+                field(value, named: label, prompt: "sonnet") { text in
                     let alias = text.trimmingCharacters(in: .whitespaces)
                     // An empty model is not a default: it is a `--model` flag with
                     // nothing after it, and a call that fails at the end of a
@@ -377,8 +381,16 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             head("Recording")
 
-            Row(label: "Live pass", hint: "Seconds of speech between interim note passes.") {
-                field(String(Int(session.settings.liveInterval)), prompt: "180") { text in
+            // Wall-clock, stamped at the *start* of a pass
+            // (`SessionModel.livePassIfDue`), so successive sets of notes are this
+            // far apart rather than this-far-plus-however-long-the-model-took.
+            //
+            // It is a floor, not a schedule: the check only runs when confirmed
+            // speech arrives, so silence does not fire a pass — it defers one.
+            // Saying "seconds of speech" described a mechanism that does not
+            // exist, and the interval is not measured in speech time.
+            Row(label: "Live pass", hint: "Seconds between one set of interim notes and the next.") {
+                field(String(Int(session.settings.liveInterval)), named: "Live pass", prompt: "180") { text in
                     guard let seconds = Double(text) else {
                         return String(Int(session.settings.liveInterval))
                     }
@@ -400,7 +412,7 @@ struct SettingsView: View {
             }
 
             Row(label: "Minimum words", hint: "A live pass waits until this many new words have been said. Useful when a lecturer works at the board in silence.") {
-                field(String(session.settings.minWordsPerPass), prompt: "40") { text in
+                field(String(session.settings.minWordsPerPass), named: "Minimum words", prompt: "40") { text in
                     // `Int(_:)` returns nil on overflow rather than trapping, so
                     // this one is safe from the crash above — but it still needs a
                     // ceiling, because a floor no lecture reaches means no interim
@@ -419,7 +431,7 @@ struct SettingsView: View {
 
             markRow(
                 "Audio", isOn: session.settings.keepAudio, named: "Keep the audio",
-                hint: "The recording is kept as a .wav beside the note, which is what makes playback possible. A term of lectures is several gigabytes sitting in the vault, and syncing with it."
+                hint: "The recording is kept as a .wav beside the note, which is what makes playback possible. A term of lectures is several gigabytes sitting in the vault, and syncing wherever the vault syncs."
             ) { on in update { $0.keepAudio = on } }
 
             textRow(
@@ -474,9 +486,12 @@ struct SettingsView: View {
 
     private var importSection: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            head("The CLI's config")
+            // "The CLI" is ambiguous on this sheet: the section above is about the
+            // claude CLI, and this one is about the separate lecture-notes CLI
+            // that writes the config file named below.
+            head("The lecture-notes CLI")
 
-            prose("Every field above can be read back from the Python CLI's config, which is the only route for anyone who set the CLI up after installing the app.", tone: Palette.inkSoft)
+            prose("Every field above can be read back from the config file that the CLI writes, for anyone who set it up after installing the app.", tone: Palette.inkSoft)
 
             Text(ConfigImport.defaultPath.path(percentEncoded: false))
                 .font(Typography.micro)
@@ -571,12 +586,20 @@ struct SettingsView: View {
         .accessibilityAddTraits(.isHeader)
     }
 
+    /// `named` defaults to the visible label and is overridden where the label
+    /// alone is ambiguous.
+    ///
+    /// Two mirrors put three fields called "Courses folder" and three called
+    /// "Lectures folder" in the rotor, which is the same collision the model
+    /// fields had — and there the label column disambiguates visually while the
+    /// rotor is a flat list with nothing else to go on.
     private func textRow(
         _ label: String, value: String, prompt: String, hint: String? = nil,
+        named: String? = nil,
         commit: @escaping (String) -> Void
     ) -> some View {
         Row(label: label, hint: hint) {
-            field(value, prompt: prompt) { text in
+            field(value, named: named ?? label, prompt: prompt) { text in
                 commit(text)
                 return text
             }
@@ -594,11 +617,17 @@ struct SettingsView: View {
         }
     }
 
+    /// `named` is the field's accessible name. Without it the placeholder is the
+    /// only name a field has, which left three model fields all called "sonnet"
+    /// and the two recording fields called "180" and "40" — the label column
+    /// carries the distinction visually and nothing carried it to VoiceOver.
     private func field(
-        _ value: String, prompt: String, width: CGFloat? = nil,
+        _ value: String, named: String, prompt: String, width: CGFloat? = nil,
         commit: @escaping (String) -> String
     ) -> some View {
-        FieldText(value: value, prompt: prompt, width: width ?? Self.fieldWidth, commit: commit)
+        FieldText(
+            value: value, name: named, prompt: prompt,
+            width: width ?? Self.fieldWidth, commit: commit)
     }
 
     /// A chosen path and the button that changes it. The path is this control's
@@ -705,6 +734,9 @@ private struct Row<Content: View>: View {
 /// instead of leaving it showing a change that never happened.
 private struct FieldText: View {
     let value: String
+    /// Not drawn: the row's label column carries this visually. It is here so the
+    /// field has an accessible name that is not its placeholder.
+    let name: String
     let prompt: String
     let width: CGFloat
     let commit: (String) -> String
@@ -712,8 +744,12 @@ private struct FieldText: View {
     @State private var draft: String
     @FocusState private var isFocused: Bool
 
-    init(value: String, prompt: String, width: CGFloat, commit: @escaping (String) -> String) {
+    init(
+        value: String, name: String, prompt: String, width: CGFloat,
+        commit: @escaping (String) -> String
+    ) {
         self.value = value
+        self.name = name
         self.prompt = prompt
         self.width = width
         self.commit = commit
@@ -736,8 +772,27 @@ private struct FieldText: View {
             .overlay(alignment: .bottom) {
                 Rectangle().fill(Palette.rule).frame(height: Spacing.hair)
             }
+            // `.plain` draws no bezel and therefore no focus ring, so a sheet of
+            // these gave a keyboard user no way to see which field Tab had
+            // reached. Drawn as the doubled plate rule the rest of the system
+            // uses rather than as a colour change (PRODUCT.md, Accessibility):
+            // `plate` is a legal boundary on `wash` in both appearances, worst
+            // 3.19:1. The gap is `hair` rather than `plateBorderGap`, which at
+            // 6pt is most of a field's height.
+            .overlay {
+                if isFocused {
+                    ZStack {
+                        Rectangle()
+                            .strokeBorder(Palette.plate, lineWidth: Spacing.plateBorderOuter)
+                        Rectangle()
+                            .strokeBorder(Palette.rule, lineWidth: Spacing.plateBorderInner)
+                            .padding(Spacing.plateBorderOuter + Spacing.hair)
+                    }
+                }
+            }
             .frame(maxWidth: width, alignment: .leading)
             .focused($isFocused)
+            .accessibilityLabel(name)
             .onSubmit { draft = commit(draft) }
             .onChange(of: isFocused) { _, focused in
                 if !focused { draft = commit(draft) }

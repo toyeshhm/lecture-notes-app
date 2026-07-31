@@ -111,10 +111,13 @@ struct MenuBarView: View {
                 ? "Listening for the subject…"
                 : "\(session.course) · \(session.topic)")
 
-            Button("Stop & write") { session.stop() }
+            Button("Stop recording") { session.stop() }
                 .buttonStyle(PlateButtonStyle(reduceMotion: reduceMotion))
                 .keyboardShortcut(.defaultAction)
-                .accessibilityHint("Stops recording and writes the notes")
+                // The hint carries only what the label cannot. "Stops recording"
+                // would restate the button word for word, and a hint is read
+                // before the button can be pressed.
+                .accessibilityHint("Writes the notes into your vault")
         }
     }
 
@@ -138,10 +141,12 @@ struct MenuBarView: View {
                 .foregroundStyle(Palette.ink)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Button("Try again") { session.start() }
+            // Verb plus object, and the object is the thing that failed. No hint:
+            // a hint that restates the label is one more thing VoiceOver reads
+            // before the button can be pressed.
+            Button("Start recording again") { session.start() }
                 .buttonStyle(PlateButtonStyle(reduceMotion: reduceMotion))
                 .keyboardShortcut(.defaultAction)
-                .accessibilityHint("Starts the recording over")
         }
     }
 
@@ -209,8 +214,15 @@ private struct RecordingStamp: View {
                 // state stays unmistakably live as a *shape* change with no
                 // movement. Driven off the timeline rather than a stored timer
                 // because the view owns no other state.
+                //
+                // Hollow is a cinnabar outline, not an absent disc. With the disc
+                // gone the mark falls back to the `rule` ring alone, which measures
+                // 1.67:1 on the dark board — this popover is board ground with no
+                // sheet in it (§5.6) — and reads as nothing at all, so the
+                // alternation would be a flash rather than the two shapes §6 asks
+                // for.
                 TimelineView(.periodic(from: .now, by: 0.5)) { context in
-                    disc.opacity(Self.isFilled(at: context.date) ? 1 : 0)
+                    if Self.isFilled(at: context.date) { disc } else { hollowDisc }
                 }
             } else {
                 disc
@@ -236,6 +248,14 @@ private struct RecordingStamp: View {
     private var disc: some View {
         Circle()
             .fill(Palette.stamp)
+            .frame(width: Spacing.md, height: Spacing.md)
+    }
+
+    /// The off half of the alternation: the same disc, hollow. `stamp` is legal
+    /// as a 1pt outline because a mark is not text (DESIGN.md §2).
+    private var hollowDisc: some View {
+        Circle()
+            .strokeBorder(Palette.stamp, lineWidth: Spacing.hair)
             .frame(width: Spacing.md, height: Spacing.md)
     }
 

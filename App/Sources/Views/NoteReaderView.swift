@@ -49,6 +49,7 @@ struct NoteReaderView: View {
                 // Outside the plate border, bottom left, where "Drawn from
                 // nature by W.H. Fitch" sits on a Curtis plate (§5.4).
                 SpecimenLabel(title: captionTitle, detail: captionDetail)
+                    .accessibilityLabel(spokenCaption)
             }
             .frame(maxWidth: Spacing.sheetMax)
             .frame(maxWidth: .infinity)   // centres the sheet, grows the mount
@@ -67,14 +68,17 @@ struct NoteReaderView: View {
     /// specimen and nothing that is not the note goes inside its border.
     private var backToLibrary: some View {
         Button(action: close) {
-            Text("← \(entry.course)")
+            // `captionTitle`, not `entry.course`: `_Unsorted` is a folder name
+            // and this button is prose, so the two must not disagree about what
+            // the course is called.
+            Text("← \(captionTitle)")
                 .font(Typography.caption.smallCaps())
                 .tracking(Typography.captionTracking)
                 .foregroundStyle(Palette.inkSoft)
         }
         .buttonStyle(.plain)
         .keyboardShortcut(.escape, modifiers: [])
-        .accessibilityLabel("Back to \(entry.course)")
+        .accessibilityLabel("Back to \(captionTitle)")
     }
 
     // MARK: Sheet
@@ -196,6 +200,20 @@ struct NoteReaderView: View {
         if let minutes = entry.durationMinutes { parts.append("\(minutes) min") }
         if entry.status != "complete" { parts.append("incomplete") }
         return parts.joined(separator: " · ")
+    }
+
+    /// The same line, said rather than set. "45 min" is read out as the letters
+    /// and the interpunct as nothing at all, so the caption keeps the engraved
+    /// form and this carries the spoken one.
+    private var spokenCaption: String {
+        var parts = [captionTitle, entry.date]
+        if let minutes = entry.durationMinutes {
+            parts.append(
+                Duration.seconds(max(minutes, 0) * 60)
+                    .formatted(.units(allowed: [.hours, .minutes], width: .wide)))
+        }
+        if entry.status != "complete" { parts.append("incomplete") }
+        return parts.filter { !$0.isEmpty }.joined(separator: ". ")
     }
 
     // MARK: Loading

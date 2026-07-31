@@ -254,7 +254,7 @@ final class ModelDownload {
             case .htmlErrorResponse:
                 // A sign-in page served where a model file was asked for is
                 // what a captive portal looks like from here.
-                return "The network answered with a web page instead of the download. That is usually a wifi login that has not been completed yet."
+                return "The network answered with a web page instead of the download. That is usually a wifi login that has not been completed yet. Open a browser, sign in to the network, then try again."
             case .rateLimited:
                 return "Hugging Face is rate-limiting this Mac. Waiting a few minutes normally clears it."
             case .networkDisabled, .modelMissing:
@@ -333,6 +333,7 @@ struct ModelDownloadView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var download: ModelDownload
 
@@ -351,6 +352,12 @@ struct ModelDownloadView: View {
                 .padding(Spacing.plate)
         }
         .task { await download.refresh() }
+        // Escape means "leave this sheet", never "abandon the download" — every
+        // state's `.cancelAction` button already dismisses rather than cancels.
+        // Bound here because `.done` has one button and it holds `.defaultAction`,
+        // so Escape had nothing to trigger on the state the sheet opens in
+        // whenever the models are already cached.
+        .onExitCommand { dismiss() }
     }
 
     private var sheet: some View {
@@ -373,7 +380,7 @@ struct ModelDownloadView: View {
                 .tracking(Typography.h2Tracking)
                 .foregroundStyle(Palette.ink)
                 .accessibilityAddTraits(.isHeader)
-            SpecimenLabel(title: "Parakeet TDT v3 · recognised on this Mac", detail: sizeLine)
+            SpecimenLabel(title: "Parakeet TDT v3 · speech recognised on this Mac", detail: sizeLine)
         }
     }
 
@@ -401,9 +408,9 @@ struct ModelDownloadView: View {
         case .idle:
             prose(
                 """
-                Speech is recognised on this Mac, so the model has to be here \
-                before a lecture starts. It is a few hundred megabytes and it \
-                downloads once. Fetching it now is the difference between \
+                Speech is recognised on this Mac, so the models have to be here \
+                before a lecture starts. They are a few hundred megabytes and \
+                they download once. Fetching them now is the difference between \
                 pressing record and recording, and pressing record and waiting \
                 on the hall's wifi.
                 """)
@@ -455,11 +462,19 @@ struct ModelDownloadView: View {
     private var elapsed: some View {
         if let startedAt = download.startedAt {
             TimelineView(.periodic(from: startedAt, by: 1)) { context in
-                Text(SessionModel.clock(context.date.timeIntervalSince(startedAt)))
+                let seconds = context.date.timeIntervalSince(startedAt)
+                Text(SessionModel.clock(seconds))
                     .font(Typography.micro)
                     .tracking(Typography.microTracking)
                     .monospacedDigit()
                     .foregroundStyle(Palette.inkSoft)
+                    // Tabular figures are for the eye; "1:04" read literally is
+                    // "one colon zero four", so the spoken form is spelled out —
+                    // the same swap `SessionModel.spokenElapsed` makes for the
+                    // capture panel's clock.
+                    .accessibilityValue(
+                        Duration.seconds(Int(seconds)).formatted(
+                            .units(allowed: [.hours, .minutes, .seconds], width: .wide)))
             }
             // Not hidden. Once the stage pins to `.preparing` the bar is
             // indeterminate and has no value left to announce, and this clock is
@@ -489,7 +504,7 @@ struct ModelDownloadView: View {
         case .checking:
             return "Checking what is already here."
         case .downloading(let fraction):
-            return "Downloading — \(Int((fraction * 100).rounded()))%"
+            return "Downloading, \(Int((fraction * 100).rounded()))%"
         case .preparing:
             return "Downloaded. Preparing them for this Mac."
         }
@@ -503,7 +518,7 @@ struct ModelDownloadView: View {
             switch download.state {
             case .idle:
                 Button("Download now") { download.start() }
-                    .buttonStyle(SheetButtonStyle())
+                    .buttonStyle(SheetButtonStyle(reduceMotion: reduceMotion))
                     .keyboardShortcut(.defaultAction)
                 Button("Not now") { dismiss() }
                     .buttonStyle(.plain)
@@ -520,7 +535,7 @@ struct ModelDownloadView: View {
                 // out a 600 MB fetch on hall wifi could not go back and fix their
                 // claude login while it ran.
                 Button("Keep downloading in the background") { dismiss() }
-                    .buttonStyle(SheetButtonStyle())
+                    .buttonStyle(SheetButtonStyle(reduceMotion: reduceMotion))
                     .keyboardShortcut(.cancelAction)
                 Button("Cancel download") { download.cancel() }
                     .buttonStyle(.plain)
@@ -529,12 +544,12 @@ struct ModelDownloadView: View {
 
             case .done:
                 Button("Done") { dismiss() }
-                    .buttonStyle(SheetButtonStyle())
+                    .buttonStyle(SheetButtonStyle(reduceMotion: reduceMotion))
                     .keyboardShortcut(.defaultAction)
 
             case .failed:
                 Button("Try again") { download.start() }
-                    .buttonStyle(SheetButtonStyle())
+                    .buttonStyle(SheetButtonStyle(reduceMotion: reduceMotion))
                     .keyboardShortcut(.defaultAction)
                 Button("Close") { dismiss() }
                     .buttonStyle(.plain)
@@ -623,7 +638,12 @@ private struct HatchBar: View {
 /// because that one is file-private to `MenuBarView`; if a third site wants it,
 /// it belongs in `App/Sources/Components/` instead of being copied again.
 private struct SheetButtonStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Passed in rather than read from the environment. A `ButtonStyle` is not a
+    /// `View`, so SwiftUI never installs its `DynamicProperty` wrappers in the
+    /// graph and an `@Environment` here reads the default — which is `false`, so
+    /// the press fade ran at full duration under Reduce Motion. `SlipButtonStyle`
+    /// and `MenuBarView`'s `PlateButtonStyle` already take it as a parameter.
+    let reduceMotion: Bool
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label

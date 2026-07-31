@@ -1,3 +1,4 @@
+import Foundation
 import LectureKit
 import SwiftUI
 
@@ -302,6 +303,15 @@ private struct LectureRow: View {
         return minutes >= 60 ? "\(minutes / 60) h \(minutes % 60) min" : "\(minutes) min"
     }
 
+    /// The same figure in words. "1 h 30 min" is set for the eye and read out as
+    /// the letters, so the caption line keeps the engraved form and the row's
+    /// label carries this one.
+    private var spokenDuration: String {
+        guard let minutes = lecture.durationMinutes.map({ max($0, 0) }) else { return "" }
+        return Duration.seconds(minutes * 60)
+            .formatted(.units(allowed: [.hours, .minutes], width: .wide))
+    }
+
     /// `status: complete` is what the final pass writes. Anything else — the
     /// `recording` a crashed session leaves behind, or a value a person typed —
     /// is not a finished note.
@@ -323,7 +333,7 @@ private struct LectureRow: View {
                     // library, and it is stated rather than styled: there is no
                     // colour, weight or icon carrying it.
                     if !isComplete {
-                        Text("Unfinished — the recording ended before the final pass")
+                        Text("Unfinished. The recording ended before the notes were written.")
                             .font(Typography.ui)
                             .foregroundStyle(Palette.inkSoft)
                             .lineLimit(1)
@@ -365,11 +375,14 @@ private struct LectureRow: View {
             lecture.topic,
             displayCourse,
             lecture.date,
-            durationText,
+            spokenDuration,
             HatchSwatch.densityDescription(wordsPerMinute: lecture.wordsPerMinute),
         ]
-        if !isComplete { parts.append("unfinished") }
-        return parts.joined(separator: ". ")
+        if !isComplete { parts.append("Unfinished") }
+        // A note with no date or no duration would otherwise contribute an empty
+        // part, which joins as a doubled full stop and reads as a pause where
+        // nothing was said.
+        return parts.filter { !$0.isEmpty }.joined(separator: ". ")
     }
 
     // §5.4 also specifies a type-specimen stamp on a course's canonical
@@ -397,7 +410,7 @@ private struct EmptyPlate: View {
                 .font(Typography.ui)
                 .foregroundStyle(Palette.ink)
 
-            Text("Record one. It is transcribed on this Mac, filed under the course it was detected as, and appears here when the final pass finishes.")
+            Text("Record one. It is transcribed on this Mac, filed under the course it was detected as, and appears here once the notes are written.")
                 .font(Typography.ui)
                 .foregroundStyle(Palette.inkSoft)
                 .fixedSize(horizontal: false, vertical: true)

@@ -1,3 +1,4 @@
+import Foundation
 import LectureKit
 import SwiftUI
 
@@ -19,6 +20,7 @@ struct LectureActionBar: View {
     let reload: () -> Void
 
     @Environment(SessionModel.self) private var session
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var player = LecturePlayer()
     @State private var rerun: Rerun = .idle
@@ -45,7 +47,7 @@ struct LectureActionBar: View {
             }
             status
         }
-        .animation(Motion.settle.animation(reduceMotion: false), value: rerun)
+        .animation(Motion.settle.animation(reduceMotion: reduceMotion), value: rerun)
         // A player holding an open file on a vault that is being unmounted, or a
         // lecture left playing while another is opened, both end here.
         .onDisappear { player.stop() }
@@ -67,7 +69,10 @@ struct LectureActionBar: View {
 
     private var playControl: some View {
         HStack(spacing: Spacing.sm) {
-            action(player.isPlaying ? "Pause" : "Play recording") { player.toggle(entry) }
+            // The word names the act, not the state, and it is the same word
+            // Voice Control has to hear: "Pause recording" while it is playing,
+            // "Play recording" while it is not.
+            action(player.isPlaying ? "Pause recording" : "Play recording") { player.toggle(entry) }
             if player.duration > 0 {
                 // Tabular, so the reading does not twitch a word sideways every
                 // second while you are trying to read past it.
@@ -75,9 +80,22 @@ struct LectureActionBar: View {
                     .font(Typography.micro)
                     .tracking(Typography.microTracking)
                     .foregroundStyle(Palette.inkSoft)
-                    .accessibilityLabel("\(Int(player.currentTime)) seconds of \(Int(player.duration))")
+                    // "47:22" read literally is "four seven colon two two", and a
+                    // raw second count is worse still: a 47-minute lecture came
+                    // out as "2842 seconds of 2842". Spelled in units instead,
+                    // the way `SessionModel.spokenElapsed` spells the capture
+                    // sheet's clock.
+                    .accessibilityLabel("Position")
+                    .accessibilityValue("\(spoken(player.currentTime)) of \(spoken(player.duration))")
             }
         }
+    }
+
+    /// A playback time in words. Seconds are kept: a listener scrubbing by ear
+    /// needs them, and this is a readout rather than a duration on a label.
+    private func spoken(_ seconds: TimeInterval) -> String {
+        Duration.seconds(Int(seconds))
+            .formatted(.units(allowed: [.hours, .minutes, .seconds], width: .wide))
     }
 
     @ViewBuilder private var rerunControl: some View {
@@ -93,7 +111,11 @@ struct LectureActionBar: View {
             // stamp glyph alone (DESIGN.md §5.3): the pigment marks the act, it
             // does not colour the sentence describing it.
             HStack(spacing: Spacing.sm) {
-                Text("✕").foregroundStyle(Palette.stamp)
+                // The mark, not a word: what it means is in the sentence below
+                // it and in the button beside it, so spoken it is noise.
+                Text("✕")
+                    .foregroundStyle(Palette.stamp)
+                    .accessibilityHidden(true)
                 action("Replace the note") { accept() }
                 action("Keep the old one") { rerun = .idle }
             }
@@ -112,7 +134,7 @@ struct LectureActionBar: View {
         // came forward behind this one, and the fallback is a different action
         // from the one that was asked for.
         case (_, .finder(let reason)):
-            note("Opened in Finder instead — \(reason)")
+            note("Opened in Finder instead. \(reason)")
         default:
             EmptyView()
         }
