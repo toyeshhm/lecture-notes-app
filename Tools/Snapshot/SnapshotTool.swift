@@ -211,6 +211,34 @@ enum Main {
             render("library-course", size: CGSize(width: 888, height: 760),
                    LibraryView(course: "CS 314H", selection: .constant(nil)).environment(idle))
 
+            render("settings", size: CGSize(width: 760, height: 1400),
+                   SettingsView().environment(idle))
+            render("firstrun", size: CGSize(width: 720, height: 900),
+                   FirstRunView(preview: [
+                       Preflight.Check(
+                           id: "platform", title: "This Mac", state: .ok,
+                           detail: "Apple silicon, Version 15.2 (Build 24C101)"),
+                       Preflight.Check(
+                           id: "microphone", title: "Microphone", state: .warn,
+                           detail: "macOS will ask the first time you record."),
+                       Preflight.Check(
+                           id: "claude", title: "Claude CLI", state: .fail,
+                           detail: "Signed out. Run claude in a terminal, then /login."),
+                       Preflight.Check(
+                           id: "models", title: "Transcription models", state: .warn,
+                           detail: "Not downloaded yet. Fetch them now — it is a large"
+                               + " download and it will otherwise happen when you first press record."),
+                       Preflight.Check(
+                           id: "vault", title: "Vault", state: .ok,
+                           detail: "/tmp/preview-vault/Courses · 1 mirror"),
+                   ]).environment(idle))
+            render("download", size: CGSize(width: 620, height: 460),
+                   ModelDownloadView(
+                       download: ModelDownload(
+                           state: .running(.downloading(0.42)),
+                           startedAt: Date(timeIntervalSinceNow: -95)))
+                       .environment(idle))
+
             if let opened = PreviewVault.opened {
                 render("reader", size: CGSize(width: 888, height: 1000),
                        NoteReaderView(entry: opened, close: {}).environment(idle))

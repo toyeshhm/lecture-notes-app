@@ -19,6 +19,8 @@ struct RootView: View {
     /// The lecture opened for reading, if any.
     @State private var opened: LibraryLecture?
 
+    @State private var showingFirstRun = false
+
     var body: some View {
         NavigationSplitView {
             SidebarView(selection: $selection)
@@ -30,6 +32,14 @@ struct RootView: View {
         // draws its own material into.
         .toolbarBackground(Palette.board, for: .windowToolbar)
         .background(Palette.board)
+        // Presented from here rather than from the App: a sheet needs a window to
+        // hang off, and this is the first view inside the only one.
+        .sheet(isPresented: $showingFirstRun) {
+            FirstRunView().environment(session)
+        }
+        .task {
+            showingFirstRun = await FirstRunView.shouldPresent(settings: session.settings)
+        }
     }
 
     /// Capture while a lecture is running, the library otherwise.

@@ -51,14 +51,27 @@ final class SessionModel {
     private var workDirectory: URL?
     private var lastLivePass = Date.distantPast
     private var hasDetected = false
+    /// Transcript words already sent to a live pass, so the next one can tell how
+    /// much is genuinely new.
+    private var wordsSummarised = 0
 
-    private let claude: ClaudeRunner
     private let writer = VaultWriter()
 
+    /// Built per call from the *current* settings, not stored.
+    ///
+    /// It was stored, and that made the one setting whose entire purpose is to
+    /// unblock a failure the one setting that could not: recording fails with
+    /// "Couldn't find the claude binary. Set its path in Settings", the user sets
+    /// it, the path is saved and displayed, and the next recording fails
+    /// identically because the runner still holds the `nil` it was constructed
+    /// with. Only a relaunch fixed it. `ClaudeRunner` holds a path and nothing
+    /// else, so there is nothing to reuse and no reason to cache one.
+    private var claude: ClaudeRunner {
+        ClaudeRunner(claudePath: settings.claudePath ?? ClaudeRunner.locate())
+    }
+
     init(settings: LectureSettings? = nil) {
-        let resolved = settings ?? SettingsStore.load()
-        self.settings = resolved
-        claude = ClaudeRunner(claudePath: resolved.claudePath ?? ClaudeRunner.locate())
+        self.settings = settings ?? SettingsStore.load()
     }
 
     // MARK: Menu bar
@@ -246,7 +259,19 @@ final class SessionModel {
     private func livePassIfDue() async {
         guard phase == .recording,
               Date().timeIntervalSince(lastLivePass) >= settings.liveInterval else { return }
+
+        // `minWordsPerPass` was declared, parsed from the config, and read by
+        // nothing — so the setting sat in the UI describing a mechanism that did
+        // not exist. It matters in the quiet stretches: a lecturer working
+        // through a proof at the board can leave three minutes holding twenty
+        // words, and summarising that spends a model call to produce a section
+        // saying nothing, which then has to be read around for the rest of the
+        // lecture. Below the floor the pass is deferred, not skipped: the timer
+        // does not restart, so it fires as soon as enough has been said.
+        let newWords = note.transcript.split(whereSeparator: \.isWhitespace).count - wordsSummarised
+        guard newWords >= settings.minWordsPerPass else { return }
         lastLivePass = Date()
+        wordsSummarised += newWords
 
         let seen = liveNotes
         let prompt = NoteWriterPrompts.summariseChunk(newText: note.transcript, notesSoFar: seen)
@@ -281,6 +306,7 @@ final class SessionModel {
         topic = note.topic
         notePath = nil
         hasDetected = false
+        wordsSummarised = 0
         lastLivePass = Date()
     }
 

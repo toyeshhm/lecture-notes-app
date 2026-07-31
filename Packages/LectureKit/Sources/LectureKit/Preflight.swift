@@ -55,7 +55,7 @@ public struct Preflight: Sendable {
 
     /// FluidAudio runs the ASR models through CoreML on the Neural Engine, so
     /// this is a hard requirement rather than a performance note.
-    static func platform() -> Check {
+    public static func platform() -> Check {
         #if arch(arm64)
         let version = ProcessInfo.processInfo.operatingSystemVersionString
         return Check(
@@ -132,7 +132,7 @@ public struct Preflight: Sendable {
 
     /// Writable, not merely present. A vault inside a cloud folder that has not
     /// finished mounting reads as existing and rejects the write.
-    static func vaultCheck(settings: Settings) -> Check {
+    public static func vaultCheck(settings: Settings) -> Check {
         let courses = settings.coursesDirectory
         guard FileManager.default.fileExists(atPath: settings.vault.path(percentEncoded: false))
         else {

@@ -32,6 +32,15 @@ struct LectureNotesApp: App {
             }
         }
 
+        // The Settings scene, so ⌘, and the app menu both reach it the way they
+        // reach it in every other Mac app. `SettingsView` supplies its own
+        // scrolling and its own board ground; the window is just the frame.
+        Settings {
+            SettingsView()
+                .environment(session)
+                .frame(minWidth: 640, minHeight: 480)
+        }
+
         MenuBarExtra {
             MenuBarView()
                 .environment(session)
