@@ -232,21 +232,10 @@ private struct NotesSection: View {
         if session.liveNotes.isEmpty {
             emptyState
         } else {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                ForEach(Array(Self.blocks(session.liveNotes).enumerated()), id: \.offset) { item in
-                    switch item.element {
-                    case .prose(let text):
-                        Text(text)
-                            .font(Typography.bodyText)
-                            .foregroundStyle(Palette.ink)
-                            .lineSpacing(Typography.bodyLineSpacing(isDark: colorScheme == .dark))
-                            .textSelection(.enabled)
-                            .frame(maxWidth: Spacing.measure, alignment: .leading)
-                    case .code(let text):
-                        codeBlock(text)
-                    }
-                }
-            }
+            // The prose/code split this used to do by hand only handled those
+            // two shapes, so headings, lists, callouts and tables reached the
+            // sheet as literal markdown source. NoteMarkdown parses properly.
+            NoteMarkdown(source: session.liveNotes, measure: Spacing.measure)
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Live notes")
         }

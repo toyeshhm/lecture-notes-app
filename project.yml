@@ -8,6 +8,12 @@ options:
 packages:
   LectureKit:
     path: Packages/LectureKit
+  # Apple's CommonMark parser. The notes are model-generated markdown, so the
+  # parser has to handle whatever comes back — nested lists, GFM tables,
+  # mid-word emphasis — rather than the subset we hoped for.
+  Markdown:
+    url: https://github.com/swiftlang/swift-markdown.git
+    from: "0.6.0" 
 
 targets:
   LectureNotes:
@@ -23,6 +29,8 @@ targets:
     dependencies:
       - package: LectureKit
         product: LectureKit
+      - package: Markdown
+        product: Markdown
     info:
       path: App/Resources/Info.plist
       properties:
@@ -74,6 +82,8 @@ targets:
     dependencies:
       - package: LectureKit
         product: LectureKit
+      - package: Markdown
+        product: Markdown
     info:
       path: Tools/Snapshot/Info.plist
       properties:
