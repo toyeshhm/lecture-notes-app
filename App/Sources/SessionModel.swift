@@ -360,7 +360,11 @@ final class SessionModel {
     static func describe(_ error: LectureKitError) -> String {
         switch error {
         case .microphoneDenied:
-            return "Microphone access denied. Grant it in System LectureSettings › Privacy & Security."
+            // "System LectureSettings" until now — a global Settings →
+            // LectureSettings rename to dodge a SwiftUI collision walked into a
+            // user-facing string. The button beside this message is the actual
+            // route, so the sentence only has to say what is wrong.
+            return "Microphone access is off for Lecture Notes."
         case .claudeNotFound:
             return "Couldn't find the claude binary. Set its path in Settings."
         case .claudeNotLoggedIn:

@@ -1,3 +1,4 @@
+import AppKit
 import LectureKit
 import SwiftUI
 
@@ -267,8 +268,43 @@ struct RecordView: View {
                 .font(Typography.bodyText)
                 .foregroundStyle(Palette.ink)
                 .fixedSize(horizontal: false, vertical: true)
+            remedy(for: why)
         }
     }
+
+    /// A way out of the failure, where one exists.
+    ///
+    /// The microphone case needs this more than it looks like it does.
+    /// `AVCaptureDevice.requestAccess` shows its dialog **once, ever**: after a
+    /// first denial it returns false immediately and silently, with no prompt. So
+    /// an app that only calls `requestAccess` is, from that moment on, permanently
+    /// unable to record and unable to say how to fix it — pressing the button
+    /// just fails again. The only route back is System Settings, and the app has
+    /// to be the thing that offers it.
+    @ViewBuilder private func remedy(for why: String) -> some View {
+        if why.contains("Microphone"), let pane = Self.microphonePane {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                Button("Open Privacy & Security") { NSWorkspace.shared.open(pane) }
+                    .buttonStyle(.plain)
+                    .font(Typography.uiBold)
+                    .foregroundStyle(Palette.board)
+                    .padding(.horizontal, Spacing.lg)
+                    .padding(.vertical, Spacing.md)
+                    .background(Palette.stamp, in: RoundedRectangle(cornerRadius: Spacing.sm))
+                    .accessibilityHint("Opens the Microphone list in System Settings")
+
+                Text("Switch Lecture Notes on in the Microphone list, then press record again. macOS only asks once on its own, so this is the only way back.")
+                    .font(Typography.ui)
+                    .foregroundStyle(Palette.inkSoft)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    /// Opens System Settings at the Microphone list rather than the pane's root,
+    /// which is several scrolls from the switch that matters.
+    private static let microphonePane = URL(
+        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
 
     private func sectionRule(_ title: String) -> some View {
         HStack(spacing: Spacing.md) {
