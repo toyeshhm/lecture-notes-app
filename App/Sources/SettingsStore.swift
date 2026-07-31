@@ -13,7 +13,7 @@ enum SettingsStore {
            let stored = try? JSONDecoder().decode(Settings.self, from: data) {
             return stored
         }
-        return imported() ?? LectureKit.Settings(vault: defaultVault())
+        return ConfigImport.settings() ?? LectureKit.Settings(vault: defaultVault())
     }
 
     static func save(_ settings: LectureKit.Settings) {
@@ -37,28 +37,5 @@ enum SettingsStore {
             .compactMap { $0["path"] as? String }
             .first
         return best.map { URL(fileURLWithPath: $0) } ?? URL.documentsDirectory
-    }
-
-    /// Minimal TOML read of the CLI's config: enough for the keys we own.
-    private static func imported() -> LectureKit.Settings? {
-        let path = URL.homeDirectory.appending(path: ".config/lecture-notes/config.toml")
-        guard let text = try? String(contentsOf: path, encoding: .utf8) else { return nil }
-
-        func value(_ key: String) -> String? {
-            for line in text.split(separator: "\n") {
-                let parts = line.split(separator: "=", maxSplits: 1)
-                guard parts.count == 2, parts[0].trimmingCharacters(in: .whitespaces) == key
-                else { continue }
-                return parts[1].trimmingCharacters(in: .whitespaces)
-                    .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
-            }
-            return nil
-        }
-        guard let vault = value("vault") else { return nil }
-        return LectureKit.Settings(
-            vault: URL(fileURLWithPath: vault),
-            coursesSubdir: value("courses_subdir") ?? "Courses",
-            lecturesSubdir: value("lectures_subdir") ?? "Lectures"
-        )
     }
 }
