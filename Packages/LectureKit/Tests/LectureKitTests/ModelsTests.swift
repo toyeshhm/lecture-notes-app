@@ -214,3 +214,26 @@ struct NestedSubdirTests {
         }
     }
 }
+
+@Suite("Roster matching")
+struct RosterMatchingTests {
+
+    @Test("a roster code with a stripped character still matches its folder")
+    func rosterCodeWithIllegalCharacterMatches() {
+        // guess.course is sanitised at the CourseGuess boundary, so comparing it
+        // against a raw roster key could never match and every lecture spawned a
+        // fresh duplicate folder.
+        let candidates = ["CS/ML 101": "Machine Learning"]
+        let guess = CourseGuess(course: "CS/ML 101", confidence: .high, topic: "T")
+        let folder = CourseDetector.resolveFolder(guess, candidates: candidates)
+        #expect(folder == "CSML 101")
+        #expect(!folder.contains("/"), "a folder name must be one component")
+    }
+
+    @Test("case-insensitive reuse still works")
+    func caseInsensitiveReuse() {
+        let candidates = ["CS 314H": "Data Structures"]
+        let guess = CourseGuess(course: "cs 314h", confidence: .high, topic: "T")
+        #expect(CourseDetector.resolveFolder(guess, candidates: candidates) == "CS 314H")
+    }
+}

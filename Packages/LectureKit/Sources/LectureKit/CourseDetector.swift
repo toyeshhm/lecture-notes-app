@@ -170,9 +170,16 @@ public struct CourseDetector: Sendable {
         // Match case-insensitively so "cs 314h" reuses the existing "CS 314H"
         // folder instead of creating a near-duplicate. Sorted so two candidates
         // differing only in case resolve the same way every time.
-        for known in candidates.keys.sorted()
-        where known.caseInsensitiveCompare(guess.course) == .orderedSame {
-            return known
+        //
+        // Compare the *sanitised* roster key: guess.course was sanitised at the
+        // CourseGuess boundary, so a roster code containing a stripped character
+        // ("CS/ML 101") could never match its own folder and would silently
+        // spawn a duplicate on every lecture.
+        for known in candidates.keys.sorted() {
+            let normalised = PathComponent.sanitised(known, fallback: "")
+            if normalised.caseInsensitiveCompare(guess.course) == .orderedSame {
+                return normalised
+            }
         }
         return guess.course
     }
