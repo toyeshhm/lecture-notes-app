@@ -1,5 +1,6 @@
 import AVFoundation
 import LectureKit
+import OSLog
 import Observation
 import SwiftUI
 
@@ -137,21 +138,45 @@ final class SessionModel {
 
     /// Load the transcription models without recording anything.
     ///
-    /// Called at launch, and this is not an optimisation — it is the difference
-    /// between the app working and not. Loading the Parakeet models takes **~110
-    /// seconds on an M5 even when they are already on disk**, because CoreML
-    /// specialises the encoder for the Neural Engine on first use in a process.
-    /// Measured, not guessed. Paid inside `start()` it looks exactly like a hang:
-    /// press record, watch "Preparing" for two minutes, conclude the app is
-    /// broken. Paid at launch it is over before anyone presses anything.
+    /// Called at launch. The cost it moves is lopsided and both halves matter:
+    ///
+    /// - The **first ever** load on a machine takes ~110 seconds, measured on an
+    ///   M5 with the models already downloaded. That is CoreML compiling the
+    ///   encoder for the Neural Engine, and having the `.mlmodelc` on disk does
+    ///   not avoid it.
+    /// - **Every load after that takes about a second**, because macOS caches the
+    ///   compiled artifact. Measured too — the two figures are three orders of
+    ///   magnitude apart and it is easy to generalise from whichever one you hit
+    ///   first.
+    ///
+    /// So this is not a general-purpose speed-up; it is insurance against the one
+    /// run that is slow. Paid inside `start()` that run looks exactly like a
+    /// hang — press record, watch "Preparing" for two minutes, conclude the app
+    /// is broken, which is what happened. It also recurs after an OS update or a
+    /// FluidAudio version bump invalidates the compile cache, which is precisely
+    /// when nobody will remember this is a known cost.
     func warmUp() {
         guard warm == nil else { return }
         warm = Task {
-            let transcriber = Transcriber()
-            try await transcriber.loadModels()
-            return transcriber
+            Self.log.info("warm-up: loading models")
+            let started = Date()
+            do {
+                let transcriber = Transcriber()
+                try await transcriber.loadModels()
+                Self.log.info("warm-up: ready in \(Int(Date().timeIntervalSince(started)))s")
+                return transcriber
+            } catch {
+                // Logged, not swallowed. A warm-up runs with nobody awaiting it,
+                // so a failure here is invisible until the record button is
+                // pressed minutes later — and then it surfaces as a generic
+                // failure with no hint that it happened at launch.
+                Self.log.error("warm-up failed: \(error.localizedDescription, privacy: .public)")
+                throw error
+            }
         }
     }
+
+    private static let log = Logger(subsystem: "LectureNotes", category: "session")
 
     func start() {
         guard !phase.isBusy, phase != .recording else { return }
