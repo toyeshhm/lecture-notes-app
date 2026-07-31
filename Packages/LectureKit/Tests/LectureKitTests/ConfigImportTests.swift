@@ -3,19 +3,26 @@ import Testing
 
 @testable import LectureKit
 
-/// The config the CLI actually wrote on this machine, verbatim.
+/// A real config the CLI wrote, structurally verbatim.
 ///
 /// Copied rather than paraphrased: the point of the import is to read *this*, and
 /// a fixture tidied into the shape the parser expects tests the parser against
-/// itself. The commented-out block matters as much as the live keys — it is how
-/// the CLI ships its defaults, and a reader that treats `# live_model = "sonnet"`
-/// as a setting would silently pin the model.
+/// itself. Every comment, blank line and key order is as the CLI emits it. The
+/// commented-out block matters as much as the live keys — it is how the CLI ships
+/// its defaults, and a reader that treats `# live_model = "sonnet"` as a setting
+/// would silently pin the model.
+///
+/// Only the two vault paths are substituted, and they are substituted for
+/// something with the same shape: a deep path, under a cloud-sync folder, with a
+/// space in the last component. Those are the properties that could break a
+/// parser. The originals named a real person's private vaults and this file is
+/// public.
 private let realConfig = """
     # lecture-notes configuration
     # Every key here can be overridden by a LECTURE_NOTES_<KEY> env var
     # or a command-line flag.
 
-    vault = "/Users/medikonda/Library/CloudStorage/Dropbox/Apps/remotely-save/Personal"
+    vault = "/Users/example/Library/CloudStorage/Dropbox/Apps/remotely-save/Personal"
     courses_subdir = "00 - Courses"
     lectures_subdir = "Lectures"
 
@@ -28,7 +35,7 @@ private let realConfig = """
     # same source in one pass, never synced from the Personal copy. Transcript is
     # omitted here -- Personal keeps the full one.
     [[mirrors]]
-    vault = "/Users/medikonda/Library/CloudStorage/Dropbox/Apps/remotely-save/Toyo Brain"
+    vault = "/Users/example/Library/CloudStorage/Dropbox/Apps/remotely-save/Second Brain"
     courses_subdir = "02 Areas/Courses"
     lectures_subdir = "Lectures"
     keep_transcript = false
@@ -48,7 +55,7 @@ func realConfigRoundTrips() throws {
     // the second copy of every lecture silently stops being written.
     let mirror = try #require(settings.mirrors.first)
     #expect(settings.mirrors.count == 1)
-    #expect(mirror.vault.lastPathComponent == "Toyo Brain")
+    #expect(mirror.vault.lastPathComponent == "Second Brain")
     #expect(mirror.coursesSubdir == "02 Areas/Courses")
     #expect(mirror.keepTranscript == false)
     #expect(mirror.frontmatter == ["generated_by": "Toyo"])
