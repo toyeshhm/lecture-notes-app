@@ -1,0 +1,247 @@
+{
+  "source": "Köhler's Medizinal-Pflanzen",
+  "licence": "Public domain",
+  "note": "Assigned to courses deterministically by course code; see PlateAssignment.swift",
+  "plates": [
+    {
+      "species": "Smilax aristolochiifolia",
+      "title": "File:Smilax aristolochiifolia - Köhler–s Medizinal-Pflanzen-130.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/89/Smilax_aristolochiifolia_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-130.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Smilax_aristolochiifolia_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-130.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "smilax-aristolochiifolia.jpg",
+      "slug": "smilax-aristolochiifolia"
+    },
+    {
+      "species": "Viola tricolor",
+      "title": "File:Viola tricolor - Köhler–s Medizinal-Pflanzen-280 0289-caps.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Viola_tricolor_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-280_0289-caps.jpg/1280px-Viola_tricolor_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-280_0289-caps.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Viola_tricolor_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-280_0289-caps.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "viola-tricolor.jpg",
+      "slug": "viola-tricolor"
+    },
+    {
+      "species": "Cola acuminata",
+      "title": "File:Cola acuminata - Köhler–s Medizinal-Pflanzen-190.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/91/Cola_acuminata_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-190.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Cola_acuminata_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-190.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "cola-acuminata.jpg",
+      "slug": "cola-acuminata"
+    },
+    {
+      "species": "Juniperus oxycedrus",
+      "title": "File:Juniperus oxycedrus - Köhler–s Medizinal-Pflanzen-083.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/3a/Juniperus_oxycedrus_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-083.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Juniperus_oxycedrus_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-083.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "juniperus-oxycedrus.jpg",
+      "slug": "juniperus-oxycedrus"
+    },
+    {
+      "species": "Manihot glaziovii",
+      "title": "File:Manihot glaziovii - Köhler–s Medizinal-Pflanzen-223.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/10/Manihot_glaziovii_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-223.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Manihot_glaziovii_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-223.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "manihot-glaziovii.jpg",
+      "slug": "manihot-glaziovii"
+    },
+    {
+      "species": "Anthriscus sylvestris",
+      "title": "File:Anthriscus sylvestris - Köhler–s Medizinal-Pflanzen-162.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/b/b4/Anthriscus_sylvestris_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-162.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Anthriscus_sylvestris_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-162.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "anthriscus-sylvestris.jpg",
+      "slug": "anthriscus-sylvestris"
+    },
+    {
+      "species": "Schleichera oleosa",
+      "title": "File:Schleichera oleosa - Köhler–s Medizinal-Pflanzen-261.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/17/Schleichera_oleosa_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-261.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Schleichera_oleosa_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-261.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "schleichera-oleosa.jpg",
+      "slug": "schleichera-oleosa"
+    },
+    {
+      "species": "Anthemis arvensis",
+      "title": "File:Anthemis arvensis Koeh DESC.JPG",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Anthemis_arvensis_Koeh_DESC.JPG/1280px-Anthemis_arvensis_Koeh_DESC.JPG",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Anthemis_arvensis_Koeh_DESC.JPG",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "anthemis-arvensis.jpg",
+      "slug": "anthemis-arvensis"
+    },
+    {
+      "species": "Scopolia carniolica",
+      "title": "File:Scopolia carniolica - Köhler–s Medizinal-Pflanzen-263.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/25/Scopolia_carniolica_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-263.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Scopolia_carniolica_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-263.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "scopolia-carniolica.jpg",
+      "slug": "scopolia-carniolica"
+    },
+    {
+      "species": "Elettaria cardamomum",
+      "title": "File:Elettaria cardamomum - Köhler–s Medizinal-Pflanzen-057.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Elettaria_cardamomum_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-057.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Elettaria_cardamomum_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-057.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "elettaria-cardamomum.jpg",
+      "slug": "elettaria-cardamomum"
+    },
+    {
+      "species": "Convallaria majalis",
+      "title": "File:Convallaria majalis - Köhler–s Medizinal-Pflanzen-045.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/21/Convallaria_majalis_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-045.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Convallaria_majalis_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-045.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "convallaria-majalis.jpg",
+      "slug": "convallaria-majalis"
+    },
+    {
+      "species": "Piper angustifolium",
+      "title": "File:Piper angustifolium - Köhler–s Medizinal-Pflanzen-243.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/26/Piper_angustifolium_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-243.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Piper_angustifolium_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-243.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "piper-angustifolium.jpg",
+      "slug": "piper-angustifolium"
+    },
+    {
+      "species": "Rubia tinctorum",
+      "title": "File:Rubia tinctorum - Köhler–s Medizinal-Pflanzen-123.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/9b/Rubia_tinctorum_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-123.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Rubia_tinctorum_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-123.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "rubia-tinctorum.jpg",
+      "slug": "rubia-tinctorum"
+    },
+    {
+      "species": "Pterocarpus santalinus",
+      "title": "File:Pterocarpus santalinus - Köhler–s Medizinal-Pflanzen-114.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/0/03/Pterocarpus_santalinus_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-114.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Pterocarpus_santalinus_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-114.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "pterocarpus-santalinus.jpg",
+      "slug": "pterocarpus-santalinus"
+    },
+    {
+      "species": "Pimenta dioica",
+      "title": "File:Pimenta dioica - Köhler–s Medizinal-Pflanzen-239.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Pimenta_dioica_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-239.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Pimenta_dioica_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-239.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "pimenta-dioica.jpg",
+      "slug": "pimenta-dioica"
+    },
+    {
+      "species": "Paullinia cupana",
+      "title": "File:Paullinia cupana - Köhler–s Medizinal-Pflanzen-234.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/dd/Paullinia_cupana_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-234.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Paullinia_cupana_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-234.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "paullinia-cupana.jpg",
+      "slug": "paullinia-cupana"
+    },
+    {
+      "species": "Cinchona pubescens",
+      "title": "File:Cinchona pubescens - Köhler–s Medizinal-Pflanzen-161.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Cinchona_pubescens_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-161.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Cinchona_pubescens_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-161.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "cinchona-pubescens.jpg",
+      "slug": "cinchona-pubescens"
+    },
+    {
+      "species": "Fraxinus ornus",
+      "title": "File:Fraxinus ornus - Köhler–s Medizinal-Pflanzen-062.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Fraxinus_ornus_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-062.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Fraxinus_ornus_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-062.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "fraxinus-ornus.jpg",
+      "slug": "fraxinus-ornus"
+    },
+    {
+      "species": "Dryopteris filix-mas",
+      "title": "File:Dryopteris filix-mas - Köhler–s Medizinal-Pflanzen-202.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/6/60/Dryopteris_filix-mas_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-202.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Dryopteris_filix-mas_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-202.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "dryopteris-filix-mas.jpg",
+      "slug": "dryopteris-filix-mas"
+    },
+    {
+      "species": "Strychnos toxifera",
+      "title": "File:Strychnos toxifera - Köhler–s Medizinal-Pflanzen-267.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/15/Strychnos_toxifera_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-267.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Strychnos_toxifera_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-267.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "strychnos-toxifera.jpg",
+      "slug": "strychnos-toxifera"
+    },
+    {
+      "species": "Alpinia officinarum",
+      "title": "File:Alpinia officinarum - Köhler–s Medizinal-Pflanzen-156.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/89/Alpinia_officinarum_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-156.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Alpinia_officinarum_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-156.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "alpinia-officinarum.jpg",
+      "slug": "alpinia-officinarum"
+    },
+    {
+      "species": "Polygala senega",
+      "title": "File:Polygala senega - Köhler–s Medizinal-Pflanzen-247.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/99/Polygala_senega_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-247.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Polygala_senega_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-247.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "polygala-senega.jpg",
+      "slug": "polygala-senega"
+    },
+    {
+      "species": "Hyoscyamus niger",
+      "title": "File:Hyoscyamus niger - Köhler–s Medizinal-Pflanzen-073.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/4f/Hyoscyamus_niger_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-073.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Hyoscyamus_niger_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-073.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "hyoscyamus-niger.jpg",
+      "slug": "hyoscyamus-niger"
+    },
+    {
+      "species": "Melaleuca leucadendra",
+      "title": "File:Melaleuca leucadendra - Köhler–s Medizinal-Pflanzen-092.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Melaleuca_leucadendra_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-092.jpg",
+      "descriptionUrl": "https://commons.wikimedia.org/wiki/File:Melaleuca_leucadendra_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-092.jpg",
+      "licence": "Public domain",
+      "credit": "Franz Eugen Köhler, Köhler's Medizinal-Pflanzen (1887)",
+      "file": "melaleuca-leucadendra.jpg",
+      "slug": "melaleuca-leucadendra"
+    }
+  ]
+}
