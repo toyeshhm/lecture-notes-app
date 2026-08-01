@@ -52,6 +52,18 @@ final class SessionModel {
     private var workDirectory: URL?
     /// The models, loading or loaded. See `warmUp()`.
     private var warm: Task<Transcriber, Error>?
+
+    /// Held for the length of a recording so the Mac does not idle-sleep.
+    ///
+    /// A lecture is an hour of no keyboard and no trackpad, which is exactly
+    /// what macOS reads as idle: it sleeps, `AVAudioEngine` stops, and the rest
+    /// of the lecture is gone. Nothing about the app's own activity counts as
+    /// user activity, so this has to be asserted explicitly.
+    ///
+    /// It does **not** survive the lid closing. Nothing an app can assert does;
+    /// clamshell sleep is unconditional without external power and a display.
+    /// The remedy there is to leave the lid open, and the app says so.
+    private var awake: NSObjectProtocol?
     private var lastLivePass = Date.distantPast
     private var hasDetected = false
     /// Transcript words already sent to a live pass, so the next one can tell how
@@ -366,6 +378,9 @@ final class SessionModel {
 
                 phase = .recording
                 statusLine = "Recording"
+                awake = ProcessInfo.processInfo.beginActivity(
+                    options: [.idleSystemSleepDisabled, .idleDisplaySleepDisabled, .userInitiated],
+                    reason: "Recording a lecture")
                 notePath = try? writer.save(&note, settings: settings)
                 observe(capture: cap, transcriber: transcriber)
             } catch {
@@ -383,6 +398,14 @@ final class SessionModel {
             tasks.forEach { $0.cancel() }
             tasks.removeAll()
 
+            // Released before the long finishing pass rather than after: once
+            // the microphone is closed there is nothing left that sleeping would
+            // interrupt, and holding it through a two-minute model call keeps a
+            // laptop awake in someone's bag.
+            if let awake {
+                ProcessInfo.processInfo.endActivity(awake)
+                self.awake = nil
+            }
             let wav = await capture?.stop()
             _ = try? await transcriber?.finish()
             capture = nil
@@ -517,6 +540,10 @@ final class SessionModel {
     }
 
     private func fail(_ error: any Error) {
+        if let awake {
+            ProcessInfo.processInfo.endActivity(awake)
+            self.awake = nil
+        }
         let message = (error as? LectureKitError).map(Self.describe) ?? error.localizedDescription
         phase = .failed(message)
         statusLine = message

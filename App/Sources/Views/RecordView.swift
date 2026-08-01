@@ -309,6 +309,7 @@ struct RecordView: View {
         "Your Mac transcribes the lecture as it happens. No audio leaves the machine.",
         "Every few minutes Claude writes interim notes, so you have something even if the recording ends badly.",
         "When you stop, the whole lecture is re-transcribed and written up properly, then filed under the course it worked out.",
+        "Leave the lid open. Recording keeps the Mac awake, but closing the lid sleeps it regardless and the recording stops there.",
     ]
 
     private var liveTranscript: some View {
