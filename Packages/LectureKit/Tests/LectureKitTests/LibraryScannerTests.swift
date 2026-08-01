@@ -53,7 +53,8 @@ private func stub(_ topic: String, date: String = "2026-07-30") -> LibraryLectur
     LibraryLecture(
         url: URL(fileURLWithPath: "/tmp/\(date) — \(topic).md"),
         course: "MATH 101", date: date, topic: topic, durationMinutes: nil,
-        status: nil, detectionConfidence: nil, audioURL: nil, wordsPerMinute: nil)
+        status: nil, detectionConfidence: nil, audioURL: nil, wordsPerMinute: nil,
+        noteType: nil, sourceRef: nil, pages: nil)
 }
 
 @Test("a rendered note comes back out of the scanner with every field intact")
@@ -312,4 +313,79 @@ func fencedTranscriptHeadingIsNotStructure() throws {
 func missingVaultIsEmpty() {
     let absent = URL(fileURLWithPath: "/nonexistent-\(UUID().uuidString)")
     #expect(LibraryScanner.scan(settings: Settings(vault: absent)).isEmpty)
+}
+
+@Suite("Scanning readings")
+struct LibraryScannerReadingTests {
+
+    @Test("a note with no type key is a lecture")
+    func absentTypeIsALecture() throws {
+        // Every note written before this feature existed. Treating an absent
+        // key as unknown would strip a term of notes of their duration, their
+        // hatch swatch and their re-run action.
+        let box = try ScanSandbox()
+        try box.write(
+            """
+            ---
+            title: "Trees"
+            course: CS 314H
+            date: 2026-09-02
+            duration_min: 52
+            ---
+            # Trees
+            """,
+            to: "Courses/CS 314H/Lectures/2026-09-02 Trees.md")
+
+        let lecture = try #require(
+            LibraryScanner.scan(settings: box.settings).first?.lectures.first)
+        #expect(lecture.noteType == nil)
+        #expect(lecture.isReading == false)
+        #expect(lecture.durationMinutes == 52)
+    }
+
+    @Test("a reading is read back with its source and page count")
+    func readsReadingFrontmatter() throws {
+        let box = try ScanSandbox()
+        try box.write(
+            """
+            ---
+            title: "Dynamic programming"
+            course: CS 314H
+            date: 2026-09-02
+            type: reading
+            source: "/vault/_Inbox/dp.pdf"
+            pages: 24
+            ---
+            # Dynamic programming
+            """,
+            to: "Courses/CS 314H/Lectures/2026-09-02 Dynamic programming.md")
+
+        let reading = try #require(
+            LibraryScanner.scan(settings: box.settings).first?.lectures.first)
+        #expect(reading.isReading)
+        #expect(reading.noteType == "reading")
+        #expect(reading.sourceRef == "/vault/_Inbox/dp.pdf")
+        #expect(reading.pages == 24)
+        // No transcript and no duration, so nothing draws a density it does not have.
+        #expect(reading.durationMinutes == nil)
+        #expect(reading.wordsPerMinute == nil)
+    }
+
+    @Test("a quoted source is unquoted")
+    func stripsQuotesFromSource() throws {
+        // The renderer quotes it, because a path can contain a colon. The
+        // scanner has to undo that or every source reads with quotes around it.
+        let box = try ScanSandbox()
+        try box.write(
+            """
+            ---
+            type: reading
+            source: "https://example.com/a"
+            ---
+            """,
+            to: "Courses/CS 314H/Lectures/a.md")
+
+        #expect(LibraryScanner.scan(settings: box.settings).first?.lectures.first?.sourceRef
+            == "https://example.com/a")
+    }
 }

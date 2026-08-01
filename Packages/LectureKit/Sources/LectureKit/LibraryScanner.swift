@@ -32,6 +32,18 @@ public struct LibraryLecture: Sendable, Equatable, Identifiable {
     public let audioURL: URL?
     /// Mean speech density, which the library row's hatch swatch encodes.
     public let wordsPerMinute: Double?
+    /// The `type:` key verbatim, or nil when the note has none.
+    ///
+    /// Nil is not "unknown": every note written before readings existed omits
+    /// this key and every one of them is a lecture. `isReading` encodes that.
+    public let noteType: String?
+    /// The `source:` key — a file path or a URL — for readings.
+    public let sourceRef: String?
+    /// Page count, for PDF readings.
+    public let pages: Int?
+
+    /// Only an explicit `type: reading` is a reading.
+    public var isReading: Bool { noteType == "reading" }
 }
 
 /// A course folder and the lectures filed under it.
@@ -129,7 +141,13 @@ public enum LibraryScanner {
             status: parsed.front["status"],
             detectionConfidence: parsed.front["detection_confidence"].flatMap(Confidence.init(rawValue:)),
             audioURL: FileManager.default.fileExists(atPath: audio.path) ? audio : nil,
-            wordsPerMinute: wpm(words: parsed.transcriptWords, minutes: duration)
+            wordsPerMinute: wpm(words: parsed.transcriptWords, minutes: duration),
+            noteType: parsed.front["type"].flatMap { $0.isEmpty ? nil : $0 },
+            // Already unquoted and unescaped by `Parsed`, which does it for every
+            // key. Undoing the escapes a second time here would turn a source
+            // whose own text contains `\"` into one containing `"`.
+            sourceRef: parsed.front["source"].flatMap { $0.isEmpty ? nil : $0 },
+            pages: parsed.front["pages"].flatMap(Int.init)
         )
     }
 
