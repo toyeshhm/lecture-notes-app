@@ -29,6 +29,42 @@ public struct CourseDetector: Sendable {
         - The transcript is ASR output and may contain errors.
         """
 
+    /// What was read or heard. The detection prompt describes its input, and
+    /// describing a PDF as an ASR transcript tells the model to correct text
+    /// that is already correct.
+    public enum Material: Sendable, Equatable {
+        case lecture
+        case reading
+    }
+
+    /// The detection prompt for one kind of material.
+    ///
+    /// The `.lecture` case returns `detectSystem` unchanged rather than
+    /// rebuilding it: that literal was tuned against real transcripts, and
+    /// `RegressionTests` pins it.
+    static func detectSystem(for material: Material) -> String {
+        switch material {
+        case .lecture:
+            detectSystem
+        case .reading:
+            """
+            You identify which university course a piece of course material belongs to.
+
+            Reply with ONLY a JSON object, no prose and no code fence:
+            {"course": "<course code>", "confidence": "high"|"low", "topic": "<3-6 word topic>"}
+
+            Rules:
+            - Prefer a course from the provided list. Use its code EXACTLY as given.
+            - Only invent a new course code if the material clearly fits none of them. Use the
+              code the material states (e.g. "CS 314H"), or a short subject name if none appears.
+            - confidence is "high" only if the subject matter clearly matches one course.
+              Generic or administrative material is "low".
+            - topic is what THIS material covers, for use as a filename: title case, no dates,
+              no course code, no punctuation beyond spaces and hyphens.
+            """
+        }
+    }
+
     // MARK: - Candidates
 
     /// Course folders already in the vault.
@@ -101,14 +137,15 @@ public struct CourseDetector: Sendable {
 
     // MARK: - Detection
 
-    /// Identify the course and topic for a transcript. Nil if undecidable.
+    /// Identify the course and topic for a piece of material. Nil if undecidable.
     public func detect(
-        transcript: String,
+        text: String,
         candidates: [String: String],
-        model: String
+        model: String,
+        material: Material
     ) async -> CourseGuess? {
-        let words = transcript.split(whereSeparator: \.isWhitespace)
-        guard words.count >= 20 else { return nil }  // too little speech to judge anything
+        let words = text.split(whereSeparator: \.isWhitespace)
+        guard words.count >= 20 else { return nil }  // too little material to judge anything
         let excerpt = words.prefix(1200).joined(separator: " ")
 
         let listing: String
@@ -123,11 +160,12 @@ public struct CourseDetector: Sendable {
             }.joined(separator: "\n")
         }
 
-        let prompt = "Known courses:\n\(listing)\n\nLecture transcript:\n\(excerpt)"
+        let heading = material == .lecture ? "Lecture transcript" : "Course material"
+        let prompt = "Known courses:\n\(listing)\n\n\(heading):\n\(excerpt)"
         // Detection is an optimisation, never a precondition for keeping notes:
         // any failure means _Unsorted, not a lost lecture.
         guard let raw = try? await claude.run(
-            prompt: prompt, system: Self.detectSystem, model: model, timeout: 240
+            prompt: prompt, system: Self.detectSystem(for: material), model: model, timeout: 240
         ) else { return nil }
         return Self.parseGuess(raw)
     }

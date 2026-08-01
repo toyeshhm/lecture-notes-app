@@ -303,7 +303,8 @@ final class SessionModel {
 
         let candidates = CourseDetector.candidates(in: settings.coursesDir)
         if let guess = await CourseDetector(claude: claude)
-            .detect(transcript: transcript, candidates: candidates, model: settings.detectModel) {
+            .detect(text: transcript, candidates: candidates, model: settings.detectModel,
+                    material: .lecture) {
             note.course = settings.pinnedCourse ?? CourseDetector.resolveFolder(guess, candidates: candidates)
             note.topic = guess.topic
             if settings.pinnedCourse == nil {
@@ -469,7 +470,8 @@ final class SessionModel {
 
         let candidates = CourseDetector.candidates(in: settings.coursesDir)
         let guess = await CourseDetector(claude: claude)
-            .detect(transcript: note.transcript, candidates: candidates, model: settings.detectModel)
+            .detect(text: note.transcript, candidates: candidates, model: settings.detectModel,
+                    material: .lecture)
         guard let guess else { return }
 
         // A pinned course still uses detection for the topic: skipping it left

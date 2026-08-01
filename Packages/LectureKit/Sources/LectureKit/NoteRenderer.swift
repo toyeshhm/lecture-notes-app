@@ -66,6 +66,53 @@ public enum Prompts {
         - If the transcript is too short or too garbled to support a section, omit that section \
         rather than padding it. Never invent content that is not in the transcript.
         """
+
+    /// The reading counterpart of ``final``.
+    ///
+    /// Same skeleton, two deliberate differences: no ASR-repair rules, because
+    /// the text is not speech and telling the model to fix mishearings makes it
+    /// rewrite correct text; and no "Likely exam material", because a lecturer
+    /// flags things out loud and a document does not — keeping that heading is
+    /// an invitation to invent emphasis.
+    public static let reading = """
+        You write the definitive study notes for one piece of university course material \
+        — a PDF, a chapter, a set of slides, or a web page. These replace the student's own \
+        notes, so be thorough and well organised.
+
+        Output ONLY markdown -- no preamble, no closing remarks, and do NOT wrap it in a code \
+        fence. Do NOT write a top-level `# ` heading; the note already has a title.
+
+        Structure, in this order:
+
+        `> [!abstract] In one line`
+        A single sentence naming what this material is actually about. EVERY line of a
+        callout must begin with `> `, including the body line under the header.
+
+        `## Summary`
+        2-4 sentences of what it covers and why it matters.
+
+        `## Notes`
+        The substance, under `### ` topic headings that follow the material's real structure. \
+        Bullets, not prose paragraphs. Nest sub-bullets for detail. Bold each key term on first \
+        use. Use numbered lists for anything sequential (algorithms, procedures, proofs). Use a \
+        markdown table when comparing three or more things across the same dimensions. Put \
+        worked examples in ```code fences``` when they are code, or in $$display maths$$ when \
+        they are derivations.
+
+        `## Key terms`
+        A markdown table: `| Term | Definition |`. Only terms actually introduced here.
+
+        `## Open questions`
+        Threads the material leaves unresolved, or explicitly defers. Omit if none.
+
+        Rules:
+        - Write ALL maths as LaTeX: $O(\\log n)$, not "O of log n".
+        - The text may have been extracted from a PDF or stripped from a web page, so it can \
+        carry running heads, page numbers, or navigation fragments. Ignore them; never treat \
+        them as content.
+        - If the material is too short or too fragmentary to support a section, omit that \
+        section rather than padding it. Never invent content that is not in the source.
+        """
 }
 
 // MARK: - User prompts
@@ -93,6 +140,16 @@ public enum NoteWriterPrompts {
 
         Full lecture transcript:
         \(transcript)
+        """
+    }
+
+    public static func readingNotes(text: String, course: String, source: String) -> String {
+        """
+        Course: \(course)
+        Source: \(source)
+
+        Material:
+        \(text)
         """
     }
 }

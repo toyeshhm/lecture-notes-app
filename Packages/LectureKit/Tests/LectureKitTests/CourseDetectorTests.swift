@@ -145,7 +145,7 @@ struct DetectionTests {
     func shortTranscriptIsUndecidable() async {
         guard let claude = ClaudeRunner.locate() else { return }
         let guess = await CourseDetector(claude: ClaudeRunner(claudePath: claude))
-            .detect(transcript: "okay so today um", candidates: [:], model: "sonnet")
+            .detect(text: "okay so today um", candidates: [:], model: "sonnet", material: .lecture)
         #expect(guess == nil)
     }
 
@@ -165,13 +165,60 @@ struct DetectionTests {
             """
 
         let guess = await CourseDetector(claude: ClaudeRunner(claudePath: claude)).detect(
-            transcript: transcript,
+            text: transcript,
             candidates: ["CS 314H": "Algorithms and Data Structures", "M 408D": "Calculus"],
-            model: "sonnet"
+            model: "sonnet",
+            material: .lecture
         )
 
         #expect(guess?.course == "CS 314H")
         #expect(guess?.confidence == .high)
         #expect(guess?.topic.isEmpty == false)
+    }
+}
+
+@Suite("Prompts for readings")
+struct ReadingPromptTests {
+
+    @Test("the lecture detection prompt is what it always was")
+    func lecturePromptUnchanged() {
+        // `detectSystem` is now a function of the material; the lecture case
+        // must produce the exact string the old constant did.
+        #expect(CourseDetector.detectSystem(for: .lecture) == CourseDetector.detectSystem)
+    }
+
+    @Test("the reading prompt does not describe its input as speech")
+    func readingPromptIsNotAboutSpeech() {
+        let prompt = CourseDetector.detectSystem(for: .reading)
+        #expect(!prompt.contains("ASR"))
+        #expect(!prompt.contains("lecturer"))
+        #expect(!prompt.contains("transcript"))
+        #expect(prompt.contains("JSON"))
+    }
+
+    @Test("the reading notes prompt drops the ASR repair rules")
+    func readingNotesPromptDropsASRRules() {
+        // "Silently fix obvious mishearings", applied to a PDF, instructs the
+        // model to correct text that is already correct.
+        #expect(!Prompts.reading.contains("mishearing"))
+        #expect(!Prompts.reading.contains("ASR"))
+    }
+
+    @Test("the reading notes prompt has no exam section")
+    func readingNotesPromptHasNoExamSection() {
+        // A lecturer flags things out loud. A PDF does not, and keeping the
+        // heading invites the model to invent emphasis that is not in the source.
+        #expect(!Prompts.reading.contains("Likely exam material"))
+        #expect(Prompts.reading.contains("## Key terms"))
+        #expect(Prompts.reading.contains("## Summary"))
+    }
+
+    @Test("the reading user prompt names where the material came from")
+    func readingUserPromptCarriesSource() {
+        let prompt = NoteWriterPrompts.readingNotes(
+            text: "Subproblems.", course: "CS 314H", source: "https://example.com/dp")
+        #expect(prompt.contains("CS 314H"))
+        #expect(prompt.contains("https://example.com/dp"))
+        #expect(prompt.contains("Subproblems."))
     }
 }
