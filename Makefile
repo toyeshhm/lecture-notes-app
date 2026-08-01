@@ -10,7 +10,7 @@ KIT     := Packages/LectureKit
 XCODEBUILD := xcodebuild -project $(PROJECT) -derivedDataPath $(DERIVED) -quiet
 
 .DEFAULT_GOAL := check
-.PHONY: check lint test app release snapshots generate
+.PHONY: check lint test app release install snapshots generate
 
 # `app` is in here deliberately. Without it `check` never compiled a line of
 # App/Sources — `lint` and `test` both address the package only — so nine
@@ -41,6 +41,15 @@ app: generate
 
 release:
 	./scripts/release.sh
+
+# `release` first, deliberately: this installs the same signed bundle that goes
+# into the zip, so what you run is what anyone downloading it runs. Neither
+# `check` nor `release` puts anything in /Applications, and the failure that
+# causes is silent — the app launches and is simply the previous build.
+#
+# Do not run this during a lecture. It quits the app to replace it.
+install: release
+	./scripts/install.sh
 
 snapshots: generate
 	$(XCODEBUILD) -scheme Snapshot -configuration Debug build
