@@ -57,9 +57,15 @@ struct NoteRendererTests {
         )
     }
 
-    @Test("duration is reported in whole minutes")
+    @Test("duration is reported in whole minutes, truncated")
     func durationInMinutes() {
-        #expect(renderer.render(note()).contains("duration_min: 2"))
+        #expect(renderer.render(note()).contains("duration_min: 2\n"))
+        // 3210s is 53.5 minutes: the one length that tells truncation from
+        // rounding. Every note in the vault is rewritten through render and the
+        // library sorts and labels on this key, so a drift to a rounding form
+        // would silently relabel every lecture that is not a whole number of
+        // minutes long.
+        #expect(renderer.render(note(duration: 3_210)).contains("duration_min: 53\n"))
     }
 
     @Test("status flips to complete once the final pass lands")

@@ -267,12 +267,22 @@ struct NoteSourceTests {
             == "Only http and https links can be written up.")
         #expect(SourceFailure.tooLarge.message == "That page is too large to read.")
         #expect(SourceFailure.noText(name: "handout.pdf").message
-            == "Couldn’t find any text in handout.pdf — even after reading it as a scan.")
+            == "Couldn't find any text in handout.pdf — even after reading it as a scan.")
         #expect(SourceFailure.httpStatus(code: 404, host: "example.com").message
             == "example.com returned 404.")
         #expect(SourceFailure.unreachable(host: "example.com").message
-            == "Couldn’t reach example.com.")
+            == "Couldn't reach example.com.")
         #expect(SourceFailure.emptyPage(host: "example.com").message
             == "Nothing to read at example.com — the page builds itself in JavaScript.")
+    }
+
+    @Test("a failure reads the same through a plain Error")
+    func failureSurvivesTypeErasure() {
+        // The app's error-to-statusLine funnel sees `any Error`, not a
+        // SourceFailure. Without LocalizedError it would show "The operation
+        // couldn't be completed. (LectureKit.SourceFailure error 1.)" instead
+        // of the sentence above.
+        let erased: any Error = SourceFailure.encrypted
+        #expect(erased.localizedDescription == SourceFailure.encrypted.message)
     }
 }

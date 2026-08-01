@@ -339,7 +339,7 @@ public struct Extracted: Sendable, Equatable {
 /// Distinct cases rather than one string, so tests can assert the condition;
 /// `message` keeps the wording in one place instead of scattered across throw
 /// sites. Every one of these is shown to the user verbatim.
-public enum SourceFailure: Error, Sendable, Equatable {
+public enum SourceFailure: LocalizedError, Sendable, Equatable {
     case encrypted
     case noText(name: String)
     case badScheme
@@ -353,7 +353,10 @@ public enum SourceFailure: Error, Sendable, Equatable {
         case .encrypted:
             "That PDF is password-protected."
         case .noText(let name):
-            "Couldn’t find any text in \(name) — even after reading it as a scan."
+            // Straight apostrophe, like every other string that reaches
+            // `statusLine`. A curly one here would put two different glyphs on
+            // the same line depending on which failure fired.
+            "Couldn't find any text in \(name) — even after reading it as a scan."
         case .badScheme:
             "Only http and https links can be written up."
         case .tooLarge:
@@ -361,7 +364,7 @@ public enum SourceFailure: Error, Sendable, Equatable {
         case .httpStatus(let code, let host):
             "\(host) returned \(code)."
         case .unreachable(let host):
-            "Couldn’t reach \(host)."
+            "Couldn't reach \(host)."
         case .emptyPage(let host):
             // Its own message rather than falling into "nothing to read": the
             // cause is specific, and without saying so it is indistinguishable
@@ -369,6 +372,15 @@ public enum SourceFailure: Error, Sendable, Equatable {
             "Nothing to read at \(host) — the page builds itself in JavaScript."
         }
     }
+
+    /// The same sentence, reachable without knowing the concrete type.
+    ///
+    /// The app funnels errors to `statusLine` through `localizedDescription`,
+    /// which for a plain `Error` renders as "The operation couldn't be
+    /// completed. (LectureKit.SourceFailure error 4.)". Conforming here is what
+    /// makes the doc comment above true everywhere, rather than only at the
+    /// call sites that remember to downcast.
+    public var errorDescription: String? { message }
 }
 
 // MARK: - The note
