@@ -24,6 +24,12 @@ targets:
       - path: Assets/Scenery
         type: folder
         buildPhase: resources
+      # Listed here rather than relying on `resources: [App/Resources]`, which
+      # does not copy it: that directory holds Info.plist and the entitlements,
+      # both of which xcodegen consumes as build settings rather than as files,
+      # so the icon sitting beside them was silently left out of the bundle.
+      - path: App/Resources/AppIcon.icns
+        buildPhase: resources
     resources:
       - App/Resources
     dependencies:
@@ -34,6 +40,10 @@ targets:
     info:
       path: App/Resources/Info.plist
       properties:
+        # The icon file, without its extension, is what macOS looks up. Named
+        # rather than left to a default: there is no asset catalogue in this
+        # project, so nothing would supply one.
+        CFBundleIconFile: AppIcon
         CFBundleName: Lecture Notes
         CFBundleDisplayName: Lecture Notes
         CFBundleShortVersionString: "0.1"
