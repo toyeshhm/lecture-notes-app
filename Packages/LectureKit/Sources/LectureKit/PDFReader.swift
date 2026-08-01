@@ -24,10 +24,14 @@ public enum PDFReader {
         guard let document = PDFDocument(url: url) else {
             throw SourceFailure.noText(name: name)
         }
-        // Checked before any reading: an encrypted document returns empty text
-        // rather than failing, which would otherwise send it down the OCR path
-        // to spend a minute rasterising pages it cannot decrypt.
-        guard !document.isEncrypted else { throw SourceFailure.encrypted }
+        // `isLocked`, not `isEncrypted`: the latter is true of any document
+        // carrying an encryption dictionary, which includes the ordinary
+        // publisher chapter encrypted with an owner password only to disallow
+        // printing. Those read perfectly — refusing them tells the user a
+        // readable file needs a password. `isLocked` is the one that means the
+        // text is unreachable without one, and reaching it here saves the OCR
+        // path a minute spent rasterising pages it cannot decrypt.
+        guard !document.isLocked else { throw SourceFailure.encrypted }
 
         let pages = document.pageCount
         guard pages > 0 else { throw SourceFailure.noText(name: name) }
