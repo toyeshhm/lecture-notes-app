@@ -3,19 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lecture Notes: records a lecture, transcribes it on your Mac, files the notes in Obsidian</title>
+<title>Lecture Notes: record a lecture, get study notes in Obsidian</title>
 <meta name="description" content="A free, open source macOS app. It records a lecture, transcribes it locally on the Neural Engine, and files structured study notes into your Obsidian vault under the right course.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0A0F0B">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
-<a class="skip" href="#main">Skip to the description</a>
+<a class="skip" href="#main">Skip to the content</a>
+
+<nav class="nav" aria-label="Site">
+  <div class="nav__in">
+    <a class="nav__home" href="/">Lecture&nbsp;Notes</a>
+    <div class="nav__links">
+      <a href="/" aria-current="page">Overview</a>
+      <a href="/install">Install</a>
+      <a href="/how-it-works">How it works</a>
+      <a class="nav__go" href="https://github.com/toyeshhm/lecture-notes-app/releases/tag/v0.1">Download</a>
+    </div>
+  </div>
+</nav>
 
 <header class="hero">
   <img class="hero__scene"
-       src="assets/scene-clearing.jpg"
+       src="/assets/scene-clearing.jpg"
        width="1672" height="941"
        alt="A rainforest interior at dusk. One shaft of warm light falls through the canopy onto ferns and wet rock; the left of the frame stays in near darkness. The app uses scenes like this one to tell courses apart.">
   <div class="hero__scrim" aria-hidden="true"></div>
@@ -32,24 +44,10 @@
   </div>
 </header>
 
+
+
 <main id="main" class="page">
-
-  <section class="reveal" aria-labelledby="first">
-    <h2 id="first">Three things to know before you download it</h2>
-
-    <h3>It is not notarized.</h3>
-    <p>There is no Apple Developer account behind this, so there is no certificate to sign it with and nothing to submit to Apple's notary service. It carries an ad-hoc signature, which proves the bundle has not been altered since it was built and proves nothing at all about who built it. macOS attaches a quarantine flag to anything a browser downloads, and on a quarantined app with no notarization Gatekeeper refuses the first double-click outright and offers you the Trash.</p>
-    <p>The way through, on macOS 15 and later: double-click the app, let macOS refuse, then open <b>System Settings &rsaquo; Privacy &amp; Security</b>, scroll down to the Security section, and click <b>Open Anyway</b> beside the message naming the app. Confirm once and it launches from then on. Older instructions tell you to Control-click and choose Open. Sequoia removed that override for apps that are not notarized, so it no longer does anything. If vouching for a stranger's binary is not a trade you want to make, build it from source instead and the quarantine flag never gets attached in the first place.</p>
-
-    <h3>It needs the <code>claude</code> CLI, logged in to a paid subscription.</h3>
-    <p>Transcription is local and costs nothing. The notes are a different matter: they are written by a model, through the <code>claude</code> command line tool, spending whatever Claude subscription you already pay for. One detection pass at the start, a short pass every few minutes during the lecture, one full pass over everything when you stop. That comes out of your normal usage limit; it is not a separate pool and it is not unlimited. Without a login you get a recording and a transcript and no notes at all. This is the requirement people miss.</p>
-
-    <h3>First launch downloads about 600 MB of models.</h3>
-    <p>The CoreML speech models are fetched once, on first run. Do that at home the night before rather than in the ninety seconds before a lecture starts. There is a whole download screen for it, which exists so you find out early instead of finding out in a lecture theatre.</p>
-  </section>
-
-
-  <section class="reveal" aria-labelledby="file">
+<section class="reveal" aria-labelledby="file">
     <h2 id="file">What you actually end up with</h2>
     <p>Not a transcript, and not a screen inside another app you now have to check. A markdown file in the vault you already keep, which Obsidian reads as an ordinary note. This is the real output for a lecture on binary search trees, trimmed in the middle where the notes run long.</p>
 
@@ -93,8 +91,7 @@
 
     <p class="note">The frontmatter is what Obsidian shows as properties, so the notes sort and filter by course and date without you tagging anything. The callout is there because the lecturer said it out loud; marking what was flagged as examinable is the one editorial judgement the app makes.</p>
   </section>
-
-  <section class="reveal" aria-labelledby="does">
+<section class="reveal" aria-labelledby="does">
     <h2 id="does">What it does</h2>
 
     <p><b>Audio goes to disk as it arrives.</b> Not buffered in memory and written at the end. If the app crashes, or the battery goes, you lose the transcript and you still have the recording.</p>
@@ -111,28 +108,7 @@
 
     <p><b>The output is plain Obsidian markdown.</b> YAML frontmatter with course, date, duration and status. Headings, lists, callouts. Anything the lecturer flagged as examinable comes back as an <code>&gt; [!important]</code> callout, so the thing they said would be on the final is the thing you see first at 11pm. The library is read straight off the vault every time, with no index and no cache, so if you rename or move a note in Obsidian the app agrees with you on the next scan.</p>
   </section>
-
-  <section class="reveal" aria-labelledby="where">
-    <h2 id="where">Where the notes go</h2>
-    <p>You pick the vault and the two folder names. The course folder itself comes from detection, and is created if it is not there yet.</p>
-    <div class="code" role="group" aria-label="Example vault layout" tabindex="0">
-<pre><code>MyVault/
-  00 - Courses/
-    CS 314H/
-      Lectures/
-        2026-09-02 — Binary Search Tree Deletion.md
-        2026-09-04 — Red-Black Trees.md
-    M 340L/
-      Lectures/
-        2026-09-02 — Alternating Series Test.md
-    _Unsorted/
-      Lectures/
-        2026-09-04 — Course Administration.md</code></pre>
-    </div>
-    <p class="note">That last one is what a lecture looks like when detection was not sure. It carries a warning at the top of the note and the guess in the frontmatter. Detection runs again at the end of the lecture, and if the answer changes the note moves itself rather than leaving a duplicate behind.</p>
-  </section>
-
-  <section class="shots" aria-labelledby="looks">
+<section class="shots" aria-labelledby="looks">
     <h2 id="looks" class="shots__head">What it looks like</h2>
 
     <figure class="shot shot--sq reveal">
@@ -166,67 +142,19 @@
     </figure>
   </section>
 
-  <section class="reveal" aria-labelledby="run">
-    <h2 id="run">Getting it running</h2>
-
-    <p>Download the zip from the release, unzip it, drag <code>LectureNotes.app</code> into <code>/Applications</code>, then read the first section on this page again before you double-click it, because it will not open. If you would rather not go through System Settings, strip the flag yourself:</p>
-
-    <div class="code" role="group" aria-label="Command to remove the quarantine flag" tabindex="0">
-<pre><code>xattr -dr com.apple.quarantine /Applications/LectureNotes.app</code></pre>
-    </div>
-
-    <p>Either way you are the one vouching for the binary. Building it yourself avoids the question entirely, and takes about a minute:</p>
-
-    <div class="code" role="group" aria-label="Commands to build from source" tabindex="0">
-<pre><code>git clone https://github.com/toyeshhm/lecture-notes-app.git
-cd lecture-notes-app
-brew install xcodegen
-make app</code></pre>
-    </div>
-
-    <p>And if you do not have the CLI yet:</p>
-
-    <div class="code" role="group" aria-label="Commands to install and log in to the Claude CLI" tabindex="0">
-<pre><code>npm install -g @anthropic-ai/claude-code
-claude            <span class="c"># then type /login</span></code></pre>
-    </div>
-
-    <h3>What you need</h3>
-    <dl class="reqs">
-      <dt>An Apple silicon Mac</dt>
-      <dd>M1 or later. The speech models run on the Neural Engine through CoreML. There is no Intel build and no CPU fallback.</dd>
-
-      <dt>macOS 14 or later</dt>
-      <dd>Sonoma. On Sequoia and later, the Open Anyway route described above is the only one through the interface.</dd>
-
-      <dt>The <code>claude</code> CLI, logged in</dt>
-      <dd>A Pro or Max subscription is what makes this free at the margin. An <code>ANTHROPIC_API_KEY</code> works too, but it bills per token.</dd>
-
-      <dt>An Obsidian vault</dt>
-      <dd>Or any folder at all. The notes are plain markdown with YAML frontmatter. Obsidian is where they are pleasant to read, not where they have to live.</dd>
-
-      <dt>About 600 MB of disk</dt>
-      <dd>One time, on first launch, for the models.</dd>
-    </dl>
-
-    <p>Expect to grant microphone access more than once if you build from source. macOS keys that permission to a code signature, an ad-hoc signature is regenerated on every build, so a rebuild can produce something macOS considers a different app. It looks exactly like a bug and it is not one.</p>
+  <section class="reveal" aria-labelledby="need">
+    <h2 id="need">What you need before it will work</h2>
+    <p>Three of these are the sort of thing that turns a first launch into twenty minutes of confusion, so they are worth reading in full before you download rather than after.</p>
+    <ul class="need">
+      <li><b>An Apple silicon Mac on macOS 14 or later.</b> Transcription runs on the Neural Engine; there is no Intel build.</li>
+      <li><b>The <code>claude</code> CLI, logged in to a paid subscription.</b> The notes are written by a model and spend that subscription. Without it you get a recording and a transcript and nothing else.</li>
+      <li><b>About 600 MB downloaded on first launch.</b> The speech models are fetched once. Do it at home, not in a lecture theatre.</li>
+      <li><b>A minute of patience with Gatekeeper.</b> The app is not notarized, so macOS refuses the first launch and you have to allow it by hand.</li>
+    </ul>
+    <p><a class="more" href="/install">How to get past each of these &rsaquo;</a></p>
   </section>
 
-  <section class="reveal" aria-labelledby="not">
-    <h2 id="not">What it does not do</h2>
-
-    <p><b>It is not sandboxed, and it is not on the App Store.</b> It spawns the <code>claude</code> binary and writes into a vault that lives wherever you keep it, and neither of those is possible inside an App Sandbox container. That rules out the Mac App Store on its own, notarization aside.</p>
-
-    <p><b>It will spend your subscription.</b> Three kinds of pass per lecture, and a long lecture is a lot of transcript. Settings has the knobs.</p>
-
-    <p><b>It will not guess a course.</b> Covered above, and worth repeating, because the failure mode it avoids is the expensive one.</p>
-
-    <p><b>The notes are a study aid, not a record.</b> They are generated from speech recognition output and they can misattribute or drop things. Check anything that matters against the lecture itself, and do not hand them in as your own work.</p>
-
-    <p><b>Check your institution's policy before you record a lecture.</b> Plenty require explicit permission and some prohibit it outright, and consent rules differ by jurisdiction. That part is on you, not on the tool.</p>
-  </section>
-
-  <section class="close reveal" aria-labelledby="end">
+<section class="close reveal" aria-labelledby="end">
     <h2 id="end" class="visually-hidden">Download</h2>
     <p class="close__line">Free, MIT licensed, and the whole thing is on GitHub.</p>
     <p class="hero__actions">
@@ -234,7 +162,7 @@ claude            <span class="c"># then type /login</span></code></pre>
       <a class="btn btn--quiet" href="https://github.com/toyeshhm/lecture-notes-app">Read the source</a>
     </p>
   </section>
-
+</main>
 </main>
 
 <footer class="page foot">

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Lecture Notes works</title>
+<meta name="description" content="Where the notes are filed, how the course is worked out from what was said, and what the app deliberately does not do.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0A0F0B">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to the content</a>
+
+<nav class="nav" aria-label="Site">
+  <div class="nav__in">
+    <a class="nav__home" href="/">Lecture&nbsp;Notes</a>
+    <div class="nav__links">
+      <a href="/">Overview</a>
+      <a href="/install">Install</a>
+      <a href="/how-it-works" aria-current="page">How it works</a>
+      <a class="nav__go" href="https://github.com/toyeshhm/lecture-notes-app/releases/tag/v0.1">Download</a>
+    </div>
+  </div>
+</nav>
+
+<header class="ph">
+  <img class="ph__scene" src="/assets/scene-hollow.jpg" width="1672" height="941" alt="A dark mossy hollow deep inside old-growth rainforest, mist pooling between huge trunks with faint warm light filtering from far above.">
+  <div class="ph__scrim" aria-hidden="true"></div>
+  <div class="ph__body">
+    <p class="ph__kicker">How it works</p>
+    <h1 class="ph__title">A lecture goes in. A filed markdown note comes out.</h1>
+    <p class="ph__sub">What happens in between, where the file lands, and the things this app deliberately refuses to do.</p>
+  </div>
+</header>
+
+
+<main id="main" class="page">
+<section class="reveal" aria-labelledby="where">
+    <h2 id="where">Where the notes go</h2>
+    <p>You pick the vault and the two folder names. The course folder itself comes from detection, and is created if it is not there yet.</p>
+    <div class="code" role="group" aria-label="Example vault layout" tabindex="0">
+<pre><code>MyVault/
+  00 - Courses/
+    CS 314H/
+      Lectures/
+        2026-09-02 — Binary Search Tree Deletion.md
+        2026-09-04 — Red-Black Trees.md
+    M 340L/
+      Lectures/
+        2026-09-02 — Alternating Series Test.md
+    _Unsorted/
+      Lectures/
+        2026-09-04 — Course Administration.md</code></pre>
+    </div>
+    <p class="note">That last one is what a lecture looks like when detection was not sure. It carries a warning at the top of the note and the guess in the frontmatter. Detection runs again at the end of the lecture, and if the answer changes the note moves itself rather than leaving a duplicate behind.</p>
+  </section>
+<section class="reveal" aria-labelledby="not">
+    <h2 id="not">What it does not do</h2>
+
+    <p><b>It is not sandboxed, and it is not on the App Store.</b> It spawns the <code>claude</code> binary and writes into a vault that lives wherever you keep it, and neither of those is possible inside an App Sandbox container. That rules out the Mac App Store on its own, notarization aside.</p>
+
+    <p><b>It will spend your subscription.</b> Three kinds of pass per lecture, and a long lecture is a lot of transcript. Settings has the knobs.</p>
+
+    <p><b>It will not guess a course.</b> Covered above, and worth repeating, because the failure mode it avoids is the expensive one.</p>
+
+    <p><b>The notes are a study aid, not a record.</b> They are generated from speech recognition output and they can misattribute or drop things. Check anything that matters against the lecture itself, and do not hand them in as your own work.</p>
+
+    <p><b>Check your institution's policy before you record a lecture.</b> Plenty require explicit permission and some prohibit it outright, and consent rules differ by jurisdiction. That part is on you, not on the tool.</p>
+  </section>
+</main>
+</main>
+
+<footer class="page foot">
+  <p>Built by <a href="https://github.com/toyeshhm">toyeshhm</a>. Transcription by <a href="https://github.com/FluidInference/FluidAudio">FluidAudio</a> (Apache 2.0), markdown by <a href="https://github.com/swiftlang/swift-markdown">swift-markdown</a>. The scenery was generated with ChatGPT to this project's brief, so it is not under an open licence and a fork does not inherit one; the code is MIT and does.</p>
+</footer>
+
+</body>
+</html>

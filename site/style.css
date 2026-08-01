@@ -522,3 +522,165 @@ code {
   .file__src { font-size: 0.72rem; padding: 0.9rem 1rem; }
   .file__body { padding: 1.2rem 1rem 1.4rem; }
 }
+
+/* ---- Site navigation ------------------------------------------------------
+   The page used to be one scroll of nine equally-weighted sections, which is
+   what a README looks like when it is given a stylesheet. Three pages with a
+   persistent bar makes the shape of the thing visible before you read any of
+   it: what it is, how to install it, how it behaves.
+
+   Sticky rather than fixed, and it sits on solid `board` rather than a blurred
+   translucency — the hero photograph behind a frosted bar is the move that
+   makes every dark product site look like every other one. */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--board);
+  border-bottom: 1px solid var(--edge);
+}
+
+.nav__in {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 0.85rem 1.5rem;
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.nav__home {
+  font-family: var(--display);
+  font-size: 1.02rem;
+  color: var(--ink);
+  text-decoration: none;
+  margin-right: auto;
+}
+
+.nav__links {
+  display: flex;
+  align-items: baseline;
+  gap: 1.4rem;
+  flex-wrap: wrap;
+}
+
+.nav__links a {
+  font-size: 0.9rem;
+  color: var(--ink-dim);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+}
+
+.nav__links a:hover { color: var(--ink); }
+
+/* The current page is marked by a rule under it, not by the accent. The amber
+   means "live" or "this is the action" everywhere else in the product, and
+   spending it on a nav item would make it mean "you are here" as well. */
+.nav__links a[aria-current="page"] {
+  color: var(--ink);
+  border-bottom-color: var(--ink-dim);
+}
+
+.nav__go {
+  color: var(--amber) !important;
+  border-bottom-color: transparent !important;
+}
+
+.nav__go:hover { border-bottom-color: var(--amber) !important; }
+
+@media (max-width: 32em) {
+  .nav__in { gap: 0.7rem 1.1rem; padding: 0.75rem 1.15rem; }
+  .nav__home { margin-right: 0; width: 100%; }
+  .nav__links { gap: 1.1rem; }
+}
+
+/* ---- Inner page header ----------------------------------------------------
+   Shorter than the home hero, and on a different scene: three of the four
+   images were unused while the home page reused one, which wasted the only
+   thing that makes these pages feel like different rooms of the same place. */
+
+.ph {
+  position: relative;
+  min-height: 21rem;
+  display: grid;
+  align-items: end;
+  overflow: hidden;
+  border-bottom: 1px solid var(--edge);
+}
+
+.ph__scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 70% 50%;
+}
+
+/* Flat, not a fade. Same rule as the app: the images were made with a dark,
+   uncluttered left third so text can sit there, so a scrim is all that is
+   needed and a gradient would be doing the picture's job badly. */
+.ph__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--board);
+  opacity: 0.62;
+}
+
+.ph__body {
+  position: relative;
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 3.5rem 1.5rem 2.6rem;
+  width: 100%;
+}
+
+.ph__kicker {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin: 0 0 0.7rem;
+}
+
+.ph__title {
+  font-family: var(--display);
+  font-size: clamp(1.9rem, 4.4vw, 3rem);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 0;
+  max-width: 22ch;
+  text-wrap: balance;
+  color: var(--ink);
+}
+
+.ph__sub {
+  margin: 0.9rem 0 0;
+  max-width: 52ch;
+  color: var(--ink);
+  opacity: 0.86;
+}
+
+@media (max-width: 32em) {
+  .ph { min-height: 16rem; }
+  .ph__body { padding: 2.4rem 1.15rem 1.8rem; }
+}
+
+/* ---- Requirements teaser -------------------------------------------------- */
+
+.need { margin: 1.4rem 0 1.6rem; padding-left: 1.1rem; }
+.need li { margin-bottom: 0.75rem; color: var(--ink-dim); }
+.need li b { color: var(--ink); font-weight: 700; }
+
+.more {
+  display: inline-block;
+  color: var(--amber);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.more:hover { border-bottom-color: var(--amber); }

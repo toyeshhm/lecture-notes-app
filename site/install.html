@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install Lecture Notes</title>
+<meta name="description" content="What you need before Lecture Notes will run, how to get past Gatekeeper on an app that is not notarized, and how to build it from source.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0A0F0B">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to the content</a>
+
+<nav class="nav" aria-label="Site">
+  <div class="nav__in">
+    <a class="nav__home" href="/">Lecture&nbsp;Notes</a>
+    <div class="nav__links">
+      <a href="/">Overview</a>
+      <a href="/install" aria-current="page">Install</a>
+      <a href="/how-it-works">How it works</a>
+      <a class="nav__go" href="https://github.com/toyeshhm/lecture-notes-app/releases/tag/v0.1">Download</a>
+    </div>
+  </div>
+</nav>
+
+<header class="ph">
+  <img class="ph__scene" src="/assets/scene-pines.jpg" width="1672" height="941" alt="A pine forest in heavy fog before dawn, trunks receding into grey-green haze with one faint warm break far back.">
+  <div class="ph__scrim" aria-hidden="true"></div>
+  <div class="ph__body">
+    <p class="ph__kicker">Install</p>
+    <h1 class="ph__title">Four things stand between you and a working install.</h1>
+    <p class="ph__sub">None of them is hard. All of them are easier to read about now than to work out during a lecture.</p>
+  </div>
+</header>
+
+
+<main id="main" class="page">
+<section class="reveal" aria-labelledby="first">
+    <h2 id="first">Three things to know before you download it</h2>
+
+    <h3>It is not notarized.</h3>
+    <p>There is no Apple Developer account behind this, so there is no certificate to sign it with and nothing to submit to Apple's notary service. It carries an ad-hoc signature, which proves the bundle has not been altered since it was built and proves nothing at all about who built it. macOS attaches a quarantine flag to anything a browser downloads, and on a quarantined app with no notarization Gatekeeper refuses the first double-click outright and offers you the Trash.</p>
+    <p>The way through, on macOS 15 and later: double-click the app, let macOS refuse, then open <b>System Settings &rsaquo; Privacy &amp; Security</b>, scroll down to the Security section, and click <b>Open Anyway</b> beside the message naming the app. Confirm once and it launches from then on. Older instructions tell you to Control-click and choose Open. Sequoia removed that override for apps that are not notarized, so it no longer does anything. If vouching for a stranger's binary is not a trade you want to make, build it from source instead and the quarantine flag never gets attached in the first place.</p>
+
+    <h3>It needs the <code>claude</code> CLI, logged in to a paid subscription.</h3>
+    <p>Transcription is local and costs nothing. The notes are a different matter: they are written by a model, through the <code>claude</code> command line tool, spending whatever Claude subscription you already pay for. One detection pass at the start, a short pass every few minutes during the lecture, one full pass over everything when you stop. That comes out of your normal usage limit; it is not a separate pool and it is not unlimited. Without a login you get a recording and a transcript and no notes at all. This is the requirement people miss.</p>
+
+    <h3>First launch downloads about 600 MB of models.</h3>
+    <p>The CoreML speech models are fetched once, on first run. Do that at home the night before rather than in the ninety seconds before a lecture starts. There is a whole download screen for it, which exists so you find out early instead of finding out in a lecture theatre.</p>
+  </section>
+<section class="reveal" aria-labelledby="run">
+    <h2 id="run">Getting it running</h2>
+
+    <p>Download the zip from the release, unzip it, drag <code>LectureNotes.app</code> into <code>/Applications</code>, then read the first section on this page again before you double-click it, because it will not open. If you would rather not go through System Settings, strip the flag yourself:</p>
+
+    <div class="code" role="group" aria-label="Command to remove the quarantine flag" tabindex="0">
+<pre><code>xattr -dr com.apple.quarantine /Applications/LectureNotes.app</code></pre>
+    </div>
+
+    <p>Either way you are the one vouching for the binary. Building it yourself avoids the question entirely, and takes about a minute:</p>
+
+    <div class="code" role="group" aria-label="Commands to build from source" tabindex="0">
+<pre><code>git clone https://github.com/toyeshhm/lecture-notes-app.git
+cd lecture-notes-app
+brew install xcodegen
+make app</code></pre>
+    </div>
+
+    <p>And if you do not have the CLI yet:</p>
+
+    <div class="code" role="group" aria-label="Commands to install and log in to the Claude CLI" tabindex="0">
+<pre><code>npm install -g @anthropic-ai/claude-code
+claude            <span class="c"># then type /login</span></code></pre>
+    </div>
+
+    <h3>What you need</h3>
+    <dl class="reqs">
+      <dt>An Apple silicon Mac</dt>
+      <dd>M1 or later. The speech models run on the Neural Engine through CoreML. There is no Intel build and no CPU fallback.</dd>
+
+      <dt>macOS 14 or later</dt>
+      <dd>Sonoma. On Sequoia and later, the Open Anyway route described above is the only one through the interface.</dd>
+
+      <dt>The <code>claude</code> CLI, logged in</dt>
+      <dd>A Pro or Max subscription is what makes this free at the margin. An <code>ANTHROPIC_API_KEY</code> works too, but it bills per token.</dd>
+
+      <dt>An Obsidian vault</dt>
+      <dd>Or any folder at all. The notes are plain markdown with YAML frontmatter. Obsidian is where they are pleasant to read, not where they have to live.</dd>
+
+      <dt>About 600 MB of disk</dt>
+      <dd>One time, on first launch, for the models.</dd>
+    </dl>
+
+    <p>Expect to grant microphone access more than once if you build from source. macOS keys that permission to a code signature, an ad-hoc signature is regenerated on every build, so a rebuild can produce something macOS considers a different app. It looks exactly like a bug and it is not one.</p>
+  </section>
+</main>
+</main>
+
+<footer class="page foot">
+  <p>Built by <a href="https://github.com/toyeshhm">toyeshhm</a>. Transcription by <a href="https://github.com/FluidInference/FluidAudio">FluidAudio</a> (Apache 2.0), markdown by <a href="https://github.com/swiftlang/swift-markdown">swift-markdown</a>. The scenery was generated with ChatGPT to this project's brief, so it is not under an open licence and a fork does not inherit one; the code is MIT and does.</p>
+</footer>
+
+</body>
+</html>
