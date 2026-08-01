@@ -292,6 +292,85 @@ public struct CourseGuess: Sendable, Equatable {
     public var isConfident: Bool { confidence == .high }
 }
 
+// MARK: - Where a note's text came from
+
+/// What was read to produce a note.
+///
+/// A reading has no audio, no duration and no speech density, so the three
+/// things a lecture row draws from those are absent rather than zero. Keeping
+/// this on `LectureNote` rather than forking a second note type is deliberate:
+/// `VaultWriter`, `NoteRenderer` and the per-target relocation tracking are
+/// subtle and correct, and a parallel type would fork all three.
+public enum NoteSource: Sendable, Equatable {
+    /// Recorded in the app, or audio picked up from the inbox.
+    case lecture
+    /// `ocr` is true when the PDF had no text layer and Vision read it instead.
+    case pdf(file: URL, pages: Int, ocr: Bool)
+    case web(page: URL, siteTitle: String?)
+
+    /// Anything that was read rather than heard.
+    public var isReading: Bool {
+        self != .lecture
+    }
+}
+
+/// Text pulled out of a PDF or a web page, ready to be written up.
+///
+/// The two readers return the same shape on purpose: from here on the pipeline
+/// cannot tell them apart, which is what keeps the audio path and the reading
+/// path one path.
+public struct Extracted: Sendable, Equatable {
+    public var text: String
+    /// The document's own title, when it has one. Used only as a fallback topic
+    /// — the detector's topic wins, because it describes the material rather
+    /// than whatever the site put in its `<title>`.
+    public var title: String?
+    public var source: NoteSource
+
+    public init(text: String, title: String?, source: NoteSource) {
+        self.text = text
+        self.title = title
+        self.source = source
+    }
+}
+
+/// Why a PDF or a page could not be read.
+///
+/// Distinct cases rather than one string, so tests can assert the condition;
+/// `message` keeps the wording in one place instead of scattered across throw
+/// sites. Every one of these is shown to the user verbatim.
+public enum SourceFailure: Error, Sendable, Equatable {
+    case encrypted
+    case noText(name: String)
+    case badScheme
+    case tooLarge
+    case httpStatus(code: Int, host: String)
+    case unreachable(host: String)
+    case emptyPage(host: String)
+
+    public var message: String {
+        switch self {
+        case .encrypted:
+            "That PDF is password-protected."
+        case .noText(let name):
+            "Couldn’t find any text in \(name) — even after reading it as a scan."
+        case .badScheme:
+            "Only http and https links can be written up."
+        case .tooLarge:
+            "That page is too large to read."
+        case .httpStatus(let code, let host):
+            "\(host) returned \(code)."
+        case .unreachable(let host):
+            "Couldn’t reach \(host)."
+        case .emptyPage(let host):
+            // Its own message rather than falling into "nothing to read": the
+            // cause is specific, and without saying so it is indistinguishable
+            // from a broken feature.
+            "Nothing to read at \(host) — the page builds itself in JavaScript."
+        }
+    }
+}
+
 // MARK: - The note
 
 /// The note's content, rebuilt whole from state on every write.
@@ -311,6 +390,9 @@ public struct LectureNote: Sendable, Equatable {
     public var duration: TimeInterval
     public var detectedCourse: String?
     public var detectionConfidence: Confidence?
+    /// What was read or heard to produce this note. Defaults to `.lecture`, so
+    /// every site that predates readings keeps producing the note it always did.
+    public var source: NoteSource
     /// Where this note currently lives for each write target, so a later course
     /// change relocates every copy independently. Keyed by target configuration
     /// rather than by current path, which changes, or by vault, which two
@@ -327,6 +409,7 @@ public struct LectureNote: Sendable, Equatable {
         duration: TimeInterval = 0,
         detectedCourse: String? = nil,
         detectionConfidence: Confidence? = nil,
+        source: NoteSource = .lecture,
         writtenPaths: [VaultTargetID: URL] = [:]
     ) {
         self.date = date
@@ -338,6 +421,7 @@ public struct LectureNote: Sendable, Equatable {
         self.duration = duration
         self.detectedCourse = detectedCourse
         self.detectionConfidence = detectionConfidence
+        self.source = source
         self.writtenPaths = writtenPaths
     }
 

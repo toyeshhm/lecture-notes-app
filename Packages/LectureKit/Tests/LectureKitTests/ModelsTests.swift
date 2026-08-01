@@ -237,3 +237,42 @@ struct RosterMatchingTests {
         #expect(CourseDetector.resolveFolder(guess, candidates: candidates) == "CS 314H")
     }
 }
+
+@Suite("Note sources")
+struct NoteSourceTests {
+
+    @Test("a note is a lecture unless it says otherwise")
+    func defaultsToLecture() {
+        // Every existing construction site omits `source`, and each of them is a
+        // recorded lecture. The default is what keeps those sites correct.
+        let note = LectureNote(date: "2026-09-02", course: "CS 314H")
+        #expect(note.source == .lecture)
+        #expect(note.source.isReading == false)
+    }
+
+    @Test("PDFs and pages are readings")
+    func readingsAreReadings() {
+        let pdf = NoteSource.pdf(file: URL(fileURLWithPath: "/tmp/a.pdf"), pages: 24, ocr: false)
+        let web = NoteSource.web(page: URL(string: "https://example.com/x")!, siteTitle: "X")
+        #expect(pdf.isReading)
+        #expect(web.isReading)
+    }
+
+    @Test("every failure carries a sentence a person can act on")
+    func failuresReadAsSentences() {
+        // The copy is specified in the design doc; pinning it here keeps the two
+        // in step, and keeps error text out of call sites.
+        #expect(SourceFailure.encrypted.message == "That PDF is password-protected.")
+        #expect(SourceFailure.badScheme.message
+            == "Only http and https links can be written up.")
+        #expect(SourceFailure.tooLarge.message == "That page is too large to read.")
+        #expect(SourceFailure.noText(name: "handout.pdf").message
+            == "Couldn’t find any text in handout.pdf — even after reading it as a scan.")
+        #expect(SourceFailure.httpStatus(code: 404, host: "example.com").message
+            == "example.com returned 404.")
+        #expect(SourceFailure.unreachable(host: "example.com").message
+            == "Couldn’t reach example.com.")
+        #expect(SourceFailure.emptyPage(host: "example.com").message
+            == "Nothing to read at example.com — the page builds itself in JavaScript.")
+    }
+}
