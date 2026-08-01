@@ -111,6 +111,26 @@ func archiveDoesNotOverwrite() throws {
     #expect(names == ["Voice Memo 2.m4a", "Voice Memo.m4a"])
 }
 
+@Test("where a file will be archived is knowable before it moves")
+func archiveDestinationPredictsTheMove() throws {
+    let box = try InboxSandbox()
+    let first = try box.drop("reading.pdf")
+
+    // A reading's note records the PDF in its `source:` frontmatter, and the
+    // file moves into `Written up/` the instant that note reaches disk. Writing
+    // the inbox path leaves every reading pointing at a file that is no longer
+    // there, so the destination has to be known one step before it is used.
+    let predicted = InboxWatcher.archiveDestination(first, in: box.dir)
+    #expect(try InboxWatcher.archive(first, in: box.dir) == predicted)
+
+    // Including the collision suffix: predicting only the folder would name the
+    // *earlier* PDF of the same name, which is worse than naming nothing.
+    let second = try box.drop("reading.pdf")
+    let predictedAgain = InboxWatcher.archiveDestination(second, in: box.dir)
+    #expect(predictedAgain.lastPathComponent == "reading 2.pdf")
+    #expect(try InboxWatcher.archive(second, in: box.dir) == predictedAgain)
+}
+
 @Test("the archive folder is not itself scanned as pending work")
 func archiveIsNotRescanned() throws {
     let box = try InboxSandbox()

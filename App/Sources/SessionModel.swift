@@ -252,60 +252,173 @@ final class SessionModel {
     /// still extending, and applying it here would make a deliberate action sit
     /// there apparently doing nothing.
     func addRecordings(_ urls: [URL]) async {
-        let inbox = settings.inboxDirectory
-        try? InboxWatcher.prepare(inbox)
-        for url in urls {
-            var destination = inbox.appending(path: url.lastPathComponent)
-            var suffix = 2
-            while FileManager.default.fileExists(atPath: destination.path(percentEncoded: false)) {
-                let stem = url.deletingPathExtension().lastPathComponent
-                destination = inbox.appending(path: "\(stem) \(suffix).\(url.pathExtension)")
-                suffix += 1
-            }
-            // Copied, never moved: the file belongs to the user and may be the
-            // only copy of it.
-            do {
-                try FileManager.default.copyItem(at: url, to: destination)
-            } catch {
-                Self.log.error("inbox: could not copy \(url.lastPathComponent, privacy: .public)")
-                statusLine = "Couldn't add \(url.lastPathComponent)."
-            }
-        }
+        try? InboxWatcher.prepare(settings.inboxDirectory)
+        urls.forEach(copyIntoInbox)
         await processInbox(settledFor: 0)
+    }
+
+    /// Copy PDFs into the inbox and read them now. `settledFor: 0` for the same
+    /// reason as `addRecordings`.
+    ///
+    /// Filtered rather than trusted: this is also what the window's drop target
+    /// calls, and a drop carries whatever was dragged.
+    func addPDFs(_ urls: [URL]) async {
+        try? InboxWatcher.prepare(settings.inboxDirectory)
+        urls.filter { $0.pathExtension.lowercased() == "pdf" }.forEach(copyIntoInbox)
+        await processInbox(settledFor: 0)
+    }
+
+    /// Puts one file in the inbox under a name nothing else there is using.
+    ///
+    /// Copied, never moved: the file belongs to the user and may be the only
+    /// copy of it.
+    private func copyIntoInbox(_ url: URL) {
+        let inbox = settings.inboxDirectory
+        var destination = inbox.appending(path: url.lastPathComponent)
+        var suffix = 2
+        while FileManager.default.fileExists(atPath: destination.path(percentEncoded: false)) {
+            let stem = url.deletingPathExtension().lastPathComponent
+            destination = inbox.appending(path: "\(stem) \(suffix).\(url.pathExtension)")
+            suffix += 1
+        }
+        do {
+            try FileManager.default.copyItem(at: url, to: destination)
+        } catch {
+            Self.log.error("inbox: could not copy \(url.lastPathComponent, privacy: .public)")
+            statusLine = "Couldn't add \(url.lastPathComponent)."
+        }
+    }
+
+    /// Whether a link is being fetched right now, so the field can disable itself.
+    private(set) var isReadingLink = false
+
+    /// Read a web page and write it up.
+    ///
+    /// Nothing is copied into the inbox: there is no file, and the URL recorded
+    /// in the note's frontmatter is the way back to the source.
+    func writeUpLink(_ raw: String) async {
+        guard !isReadingLink, phase == .idle else { return }
+        isReadingLink = true
+        defer { isReadingLink = false }
+
+        statusLine = "Reading the page…"
+        let extracted: Extracted
+        do {
+            extracted = try await WebReader.read(raw)
+        } catch let failure as SourceFailure {
+            statusLine = failure.message
+            return
+        } catch {
+            statusLine = "Couldn't read that link."
+            return
+        }
+        await writeUp(extracted, dated: LectureNote.day(), duration: 0)
     }
 
     private func writeUp(_ item: InboxWatcher.Pending) async {
         inboxWorking = item.url.lastPathComponent
         statusLine = "Writing up \(item.url.lastPathComponent)…"
-        Self.log.info("inbox: transcribing \(item.url.lastPathComponent, privacy: .public)")
 
-        guard let transcript = try? await Transcriber.transcribeFile(item.url),
-              !transcript.split(whereSeparator: \.isWhitespace).isEmpty
-        else {
-            // Left in place rather than archived: an empty transcript is more
-            // often a file that has not finished syncing than a silent lecture,
-            // and the next pass should try again.
-            Self.log.error("inbox: no speech in \(item.url.lastPathComponent, privacy: .public)")
-            statusLine = "Couldn't read \(item.url.lastPathComponent)."
-            return
+        let extracted: Extracted
+        switch item.kind {
+        case .audio:
+            Self.log.info("inbox: transcribing \(item.url.lastPathComponent, privacy: .public)")
+            guard let transcript = try? await Transcriber.transcribeFile(item.url),
+                  !transcript.split(whereSeparator: \.isWhitespace).isEmpty
+            else {
+                // Left in place rather than archived: an empty transcript is more
+                // often a file that has not finished syncing than a silent lecture,
+                // and the next pass should try again.
+                Self.log.error("inbox: no speech in \(item.url.lastPathComponent, privacy: .public)")
+                statusLine = "Couldn't read \(item.url.lastPathComponent)."
+                inboxWorking = nil
+                return
+            }
+            extracted = Extracted(text: transcript, title: nil, source: .lecture)
+
+        case .pdf:
+            Self.log.info("inbox: reading \(item.url.lastPathComponent, privacy: .public)")
+            do {
+                // Detached: `PDFReader.read` is synchronous and a scanned lecture
+                // takes it a minute of OCR. Called inline it would block the main
+                // actor for that minute — the clock stops, the window stops
+                // drawing, and the app is indistinguishable from hung.
+                var read = try await Task.detached { try PDFReader.read(item.url) }.value
+                // Recorded where the PDF is about to be, not where it is: a
+                // successful write archives it immediately below, so the inbox
+                // path in the frontmatter would be dead before anyone could
+                // follow it.
+                if case .pdf(_, let pages, let ocr) = read.source {
+                    read.source = .pdf(
+                        file: InboxWatcher.archiveDestination(item.url, in: settings.inboxDirectory),
+                        pages: pages, ocr: ocr)
+                }
+                extracted = read
+            } catch let failure as SourceFailure {
+                Self.log.error("inbox: \(item.url.lastPathComponent, privacy: .public) unreadable")
+                statusLine = failure.message
+                inboxWorking = nil
+                return
+            } catch {
+                statusLine = "Couldn't read \(item.url.lastPathComponent)."
+                inboxWorking = nil
+                return
+            }
         }
 
         // The file's own date, not today's. A lecture shared on Friday for a
         // Wednesday recording belongs to Wednesday, and the date is what the
         // note is filed and sorted by.
-        var note = LectureNote(date: LectureNote.day(of: item.modified), course: unsortedFolder)
-        note.transcript = transcript
-        // Read from the file. Without this the note says `duration_min: 0`, which
-        // is a claim about the lecture rather than an absence of one, and the
-        // library sorts and labels on it.
-        note.duration = (try? AVAudioFile(forReading: item.url))
+        let filed = await writeUp(
+            extracted, dated: LectureNote.day(of: item.modified), duration: duration(of: item))
+        if filed {
+            // Archived only after the note is safely on disk. Moving first would
+            // lose the file if the write failed.
+            _ = try? InboxWatcher.archive(item.url, in: settings.inboxDirectory)
+        }
+        inboxWorking = nil
+    }
+
+    /// A recording's length, read from the file. Without this the note says
+    /// `duration_min: 0`, which is a claim about the lecture rather than an
+    /// absence of one, and the library sorts and labels on it.
+    ///
+    /// Zero for anything that is not audio: a reading never renders the key at
+    /// all, so the value is unused there.
+    private func duration(of item: InboxWatcher.Pending) -> TimeInterval {
+        guard item.kind == .audio else { return 0 }
+        return (try? AVAudioFile(forReading: item.url))
             .map { Double($0.length) / $0.fileFormat.sampleRate } ?? 0
+    }
+
+    /// Detect the course, write the notes, file the note. Shared by audio, PDFs
+    /// and web pages — from here on nothing knows which it is handling except
+    /// through `extracted.source`.
+    ///
+    /// Returns whether the note reached disk, which is what tells the caller
+    /// whether it may archive the source.
+    @discardableResult
+    private func writeUp(
+        _ extracted: Extracted, dated day: String, duration: TimeInterval
+    ) async -> Bool {
+        let isReading = extracted.source.isReading
+
+        var note = LectureNote(date: day, course: unsortedFolder, source: extracted.source)
+        note.transcript = isReading ? "" : extracted.text
+        note.duration = duration
+        // A reading's own title, until the detector proposes something better.
+        if let title = extracted.title, !title.isEmpty {
+            note.topic = PathComponent.sanitised(title, fallback: "Lecture")
+        }
 
         let candidates = CourseDetector.candidates(in: settings.coursesDir)
-        if let guess = await CourseDetector(claude: claude)
-            .detect(text: transcript, candidates: candidates, model: settings.detectModel,
-                    material: .lecture) {
-            note.course = settings.pinnedCourse ?? CourseDetector.resolveFolder(guess, candidates: candidates)
+        if let guess = await CourseDetector(claude: claude).detect(
+            text: extracted.text,
+            candidates: candidates,
+            model: settings.detectModel,
+            material: isReading ? .reading : .lecture) {
+            note.course = settings.pinnedCourse
+                ?? CourseDetector.resolveFolder(guess, candidates: candidates)
             note.topic = guess.topic
             if settings.pinnedCourse == nil {
                 note.detectedCourse = guess.course
@@ -313,22 +426,50 @@ final class SessionModel {
             }
         }
 
-        if let markdown = try? await claude.run(
-            prompt: NoteWriterPrompts.finalNotes(transcript: transcript, course: note.course),
-            system: Prompts.final, model: settings.finalModel, timeout: 600) {
+        let markdown: String?
+        if isReading {
+            markdown = try? await claude.run(
+                prompt: NoteWriterPrompts.readingNotes(
+                    text: extracted.text, course: note.course, source: sourceRef(extracted.source)),
+                system: Prompts.reading, model: settings.finalModel, timeout: 600)
+        } else {
+            markdown = try? await claude.run(
+                prompt: NoteWriterPrompts.finalNotes(
+                    transcript: extracted.text, course: note.course),
+                system: Prompts.final, model: settings.finalModel, timeout: 600)
+        }
+        if let markdown {
             note.finalNotes = fixCallouts(markdown)
+        } else if isReading {
+            // Nothing is filed. A lecture whose notes pass fails still has a
+            // transcript and a set of live sections worth keeping, so its note
+            // goes to disk half-written; a reading has neither, and filing one
+            // would put a note reading `status: recording` over an empty "Live
+            // notes" in the vault — the app claiming to be listening to a PDF,
+            // with no second pass that will ever come back to finish it.
+            Self.log.error("could not write up \(note.topic, privacy: .public)")
+            statusLine = "Couldn't write notes for \(note.topic)."
+            return false
         }
 
         let written = writer.saveAll(&note, settings: settings)
         guard !written.isEmpty else {
-            Self.log.error("inbox: could not file \(item.url.lastPathComponent, privacy: .public)")
-            return
+            Self.log.error("could not file \(note.topic, privacy: .public)")
+            statusLine = "Couldn't write the note into your vault."
+            return false
         }
-        // Archived only after the note is safely on disk. Moving first would
-        // lose the recording if the write failed.
-        _ = try? InboxWatcher.archive(item.url, in: settings.inboxDirectory)
-        Self.log.info("inbox: filed under \(note.course, privacy: .public)")
+        Self.log.info("filed under \(note.course, privacy: .public)")
         statusLine = "Wrote up \(note.topic)"
+        return true
+    }
+
+    /// What goes in the note's `Source:` prompt line and its frontmatter.
+    private func sourceRef(_ source: NoteSource) -> String {
+        switch source {
+        case .lecture: ""
+        case .pdf(let file, _, _): file.lastPathComponent
+        case .web(let page, _): page.absoluteString
+        }
     }
 
     func start() {
