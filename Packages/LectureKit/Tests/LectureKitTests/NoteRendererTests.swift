@@ -245,4 +245,40 @@ struct ReadingRenderTests {
         #expect(out.contains("\nsource: \"https://example.com/dp?a=1\"\n"))
         #expect(!out.contains("pages:"))
     }
+
+    @Test("a quote or a backslash in a filename is escaped")
+    func escapesQuotesAndBackslashes() {
+        // Both are legal in a macOS filename, and either one raw ends the
+        // scalar early — which makes Obsidian drop the whole frontmatter block,
+        // not merely the key it appears in.
+        let out = renderer.render(
+            reading(source: .pdf(file: URL(fileURLWithPath: #"/vault/_Inbox/a "week 3" \ok.pdf"#),
+                                 pages: 2, ocr: false)),
+            keepTranscript: true)
+        #expect(out.contains(#"source: "/vault/_Inbox/a \"week 3\" \\ok.pdf""#))
+    }
+
+    @Test("a line break in a filename is escaped, not folded into a space")
+    func escapesLineBreaks() {
+        // The quiet one. A raw newline inside a double-quoted scalar is folded
+        // to a space by every YAML parser, so nothing errors — the note simply
+        // records a path that does not exist, and the only way back to the
+        // source is gone.
+        let out = renderer.render(
+            reading(source: .pdf(file: URL(fileURLWithPath: "/vault/_Inbox/week 3\nnotes.pdf"),
+                                 pages: 2, ocr: false)),
+            keepTranscript: true)
+        #expect(out.contains(#"source: "/vault/_Inbox/week 3\nnotes.pdf""#))
+    }
+
+    @Test("a quote in the topic is escaped as well as one in the source")
+    func escapesQuotesInTitle() {
+        // `LectureActions.rerun` rebuilds a note from the title it read off
+        // disk, so a hand-edited title is an input to this line. Escaping only
+        // `source:` would leave the same failure one line above it.
+        var note = reading(source: .pdf(file: URL(fileURLWithPath: "/a.pdf"), pages: 2, ocr: false))
+        note.topic = #"Trees "and" graphs"#
+        #expect(renderer.render(note, keepTranscript: true)
+            .contains(#"title: "Trees \"and\" graphs""#))
+    }
 }

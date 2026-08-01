@@ -201,13 +201,18 @@ public func fixCallouts(_ markdown: String) -> String {
 
 /// Make a value safe inside a double-quoted YAML scalar.
 ///
-/// Only two characters can end one early. A vault path or a URL is not attacker
-/// input here, but a filename with a quote in it is ordinary and would produce
-/// frontmatter Obsidian cannot parse — which hides the whole note's metadata.
+/// Four characters can end one early, and none of them is exotic: a quote or a
+/// backslash in a filename is ordinary, and macOS accepts a line break in one
+/// too. A stray quote produces frontmatter Obsidian cannot parse, which hides
+/// the whole note's metadata. A stray line break is quieter and worse — YAML
+/// folds it into a space, so the file parses cleanly and the note's only route
+/// back to its source now names a path that does not exist.
 func yamlSafe(_ raw: String) -> String {
     raw
         .replacingOccurrences(of: "\\", with: "\\\\")
         .replacingOccurrences(of: "\"", with: "\\\"")
+        .replacingOccurrences(of: "\n", with: "\\n")
+        .replacingOccurrences(of: "\r", with: "\\r")
 }
 
 private func isFence(_ line: Substring) -> Bool {
@@ -239,7 +244,11 @@ public struct NoteRenderer: Sendable {
     ) -> String {
         var front = [
             "---",
-            "title: \"\(note.topic)\"",
+            // Escaped for the same reason `source:` is: the topic reaches here
+            // from a note already on disk as well as from the detector, and a
+            // hand-edited title with a quote in it would take the whole
+            // frontmatter block down with it, not just this key.
+            "title: \"\(yamlSafe(note.topic))\"",
             "course: \(note.course)",
             "date: \(note.date)",
         ]
