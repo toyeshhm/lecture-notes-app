@@ -290,7 +290,9 @@ public enum WebReader {
     /// every earlier range valid as the string shortens under them.
     private static func numericEntitiesReplaced(in text: String) -> String {
         var out = text
-        let pattern = /&#(x?)([0-9A-Fa-f]+);/
+        // `[xX]`, not `x`: `&#X27;` is legal HTML and survived a lowercase-only
+        // pattern into the text as literal "&#X27;".
+        let pattern = /&#([xX]?)([0-9A-Fa-f]+);/
         for match in out.matches(of: pattern).reversed() {
             let radix = match.1.isEmpty ? 10 : 16
             guard let value = UInt32(String(match.2), radix: radix),

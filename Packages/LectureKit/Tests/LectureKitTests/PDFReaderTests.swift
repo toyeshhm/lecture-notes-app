@@ -166,6 +166,31 @@ struct PDFReaderTests {
         #expect(out.text.lowercased().contains("subproblems"))
     }
 
+    @Test("text the OCR pass did not produce is never flagged as OCR'd")
+    func doesNotClaimOCRItDidNotUse() throws {
+        // A thin text layer takes the OCR branch, and Vision then reads back the
+        // same words it was given. The flag was derived by comparing the winning
+        // string against the recognised one, which is `true` whenever the two are
+        // equal — so a perfectly good text layer was reported as recognised text.
+        // The flag exists to warn that the words may carry OCR errors, so
+        // claiming it falsely is the direction that costs something.
+        let dir = try sandbox()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appending(path: "short.pdf")
+        // Well under the 100-characters-a-page floor, so the OCR branch runs.
+        try makePDF(pages: [.text("Trees are recursive.")], at: url)
+
+        let out = try PDFReader.read(url)
+
+        guard case .pdf(_, _, let ocr) = out.source else {
+            Issue.record("expected a pdf source")
+            return
+        }
+        // Whichever way Vision reads the page, the invariant holds: the flag is
+        // true only when the text actually came back from recognition.
+        #expect(ocr == (out.text != "Trees are recursive."))
+    }
+
     @Test("a PDF that needs a password is reported, not guessed at")
     func lockedPDFFails() throws {
         let dir = try sandbox()

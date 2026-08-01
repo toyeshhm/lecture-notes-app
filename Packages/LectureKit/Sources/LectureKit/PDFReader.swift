@@ -47,13 +47,21 @@ public enum PDFReader {
         let recognised = ocr(document).trimmingCharacters(in: .whitespacesAndNewlines)
         // The longer of the two. A mostly-blank PDF with a real cover page beats
         // whatever OCR made of the blank pages, and vice versa for a scan.
-        let best = recognised.count > layer.count ? recognised : layer
+        //
+        // Which branch won is carried as a Bool, never re-derived by comparing
+        // the strings: when Vision reads back exactly what the thin text layer
+        // already held, `best == recognised` is true while `best` is the layer,
+        // and the note then claims OCR on text that was never recognised. The
+        // whole point of the flag is to warn that the text may carry
+        // recognition errors, so a false positive is the expensive direction.
+        let usedOCR = recognised.count > layer.count
+        let best = usedOCR ? recognised : layer
         guard !best.isEmpty else { throw SourceFailure.noText(name: name) }
 
         return Extracted(
             text: best,
             title: title(of: document),
-            source: .pdf(file: url, pages: pages, ocr: best == recognised))
+            source: .pdf(file: url, pages: pages, ocr: usedOCR))
     }
 
     /// The document's own title, when it has a usable one.

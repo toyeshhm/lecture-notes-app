@@ -261,6 +261,14 @@ struct WebReaderStripTests {
         #expect(text == "a < b && c > d e 'f'")
     }
 
+    @Test("a hex entity is unescaped whichever case its x is in")
+    func unescapesUppercaseHexEntities() {
+        // `&#X27;` is legal HTML. A lowercase-only pattern left it in the text
+        // verbatim, so the page's apostrophes reached the model as markup.
+        #expect(WebReader.plainText(fromHTML: "<p>it&#X27;s and it&#x27;s</p>")
+            == "it's and it's")
+    }
+
     @Test("whitespace collapses but paragraphs stay apart")
     func collapsesWhitespace() {
         // Block boundaries are the only structure worth keeping: without them
