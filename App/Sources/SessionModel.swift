@@ -346,6 +346,9 @@ final class SessionModel {
 
         let extracted: Extracted
         let day: String
+        /// Where a PDF was moved to before its note was attempted, so a note
+        /// that never reaches the vault can put it back.
+        var archived: URL?
         switch item.kind {
         case .audio:
             Self.log.info("inbox: transcribing \(item.url.lastPathComponent, privacy: .public)")
@@ -387,9 +390,9 @@ final class SessionModel {
                 // recording — and the PDF is not re-read, re-OCR'd and re-written
                 // up on every inbox pass from now until someone notices.
                 if case .pdf(_, let pages, let ocr) = read.source {
-                    let home = (try? InboxWatcher.archive(item.url, in: settings.inboxDirectory))
-                        ?? item.url
-                    read.source = .pdf(file: home, pages: pages, ocr: ocr)
+                    let home = try? InboxWatcher.archive(item.url, in: settings.inboxDirectory)
+                    archived = home
+                    read.source = .pdf(file: home ?? item.url, pages: pages, ocr: ocr)
                 }
                 extracted = read
                 // Today, not the file's date. `copyItem` preserves a PDF's
@@ -411,6 +414,16 @@ final class SessionModel {
         }
 
         let filed = await writeUp(extracted, dated: day, duration: duration(of: item))
+        if !filed, let home = archived {
+            // The note never reached the vault — a full disk, a permissions
+            // change, a vault on a volume that is no longer mounted. Archiving
+            // ran before the write so the note's `source:` could name where the
+            // PDF really landed, but with no note there is nothing pointing at
+            // it: left in `Written up/` it is a file the user never moved,
+            // written up nowhere, that no later pass will look at again. Put it
+            // back and the next pass finds it.
+            try? FileManager.default.moveItem(at: home, to: item.url)
+        }
         if filed, item.kind == .audio {
             // A recording is archived only after its note is safely on disk, and
             // is the one thing here that cannot be regenerated: moving it first

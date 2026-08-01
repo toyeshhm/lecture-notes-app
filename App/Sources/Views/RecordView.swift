@@ -233,6 +233,13 @@ struct RecordView: View {
             default:
                 liveTranscript
             }
+            // Outside the switch, unlike `fromPhone`, because this one is a
+            // control rather than an explanation. `readyNotes` is hidden once a
+            // transcript exists, which is exactly the moment a lecture has just
+            // finished — and "I have just recorded that, now write up the
+            // reading it was about" is when the field is most wanted. An idle
+            // session offers it whether or not it has a transcript sitting in it.
+            if phase == .idle { readingSection.padding(.top, Spacing.lg) }
         }
         .frame(maxWidth: Spacing.sheetMax, alignment: .leading)
         .padding(Spacing.xl)
@@ -285,7 +292,6 @@ struct RecordView: View {
             .font(Typography.bodyText)
 
             fromPhone.padding(.top, Spacing.lg)
-            readingSection.padding(.top, Spacing.lg)
         }
     }
 
