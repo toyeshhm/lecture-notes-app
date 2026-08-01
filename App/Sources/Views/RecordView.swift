@@ -1,5 +1,6 @@
 import AppKit
 import LectureKit
+import UniformTypeIdentifiers
 import SwiftUI
 
 /// The home of the app: start a lecture, or watch the one that is running.
@@ -247,7 +248,61 @@ struct RecordView: View {
                 }
             }
             .font(Typography.bodyText)
+
+            fromPhone.padding(.top, Spacing.lg)
         }
+    }
+
+    /// The inbox, made visible.
+    ///
+    /// It worked before this and could not be found: nothing in the app said the
+    /// folder existed or where it was. That is the same failure the window had
+    /// when Start Recording lived only in the menu bar — a feature with no
+    /// surface is a feature nobody uses.
+    ///
+    /// "Show the folder" matters more than the picker. Adding a file here is a
+    /// one-off; the thing worth doing once is opening the folder in Finder so a
+    /// phone's share sheet can be pointed at it, after which the picker is never
+    /// needed again.
+    private var fromPhone: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            sectionRule("Recorded somewhere else")
+            Text("Audio dropped into the inbox folder in your vault is written up the same way. Your vault already syncs to your phone, so a voice memo shared into it arrives here on its own.")
+                .font(Typography.bodyText)
+                .foregroundStyle(Palette.inkSoft)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: Spacing.lg) {
+                quietAction("Add a recording…") { chooseRecordings() }
+                quietAction("Show the inbox folder") {
+                    let inbox = session.settings.inboxDirectory
+                    try? InboxWatcher.prepare(inbox)
+                    NSWorkspace.shared.activateFileViewerSelecting([inbox])
+                }
+            }
+        }
+    }
+
+    private func quietAction(_ title: String, run: @escaping () -> Void) -> some View {
+        Button(action: run) {
+            Text(title)
+                .font(Typography.ui)
+                .foregroundStyle(Palette.stamp)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Audio only, several at once: a term's backlog of voice memos is a
+    /// realistic first use, and making that one-at-a-time would be unkind.
+    private func chooseRecordings() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.allowedContentTypes = [.audio, .mpeg4Audio, .wav, .mp3, .aiff]
+        panel.prompt = "Add"
+        panel.message = "Recordings are copied into your vault's inbox and written up."
+        guard panel.runModal() == .OK, !panel.urls.isEmpty else { return }
+        let urls = panel.urls
+        Task { await session.addRecordings(urls) }
     }
 
     private static let steps = [

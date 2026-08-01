@@ -190,7 +190,7 @@ final class SessionModel {
     /// Called at launch and whenever the Mac wakes, so a lecture recorded on a
     /// phone on the way home is written up the next time the laptop is opened
     /// rather than waiting to be noticed.
-    func processInbox() async {
+    func processInbox(settledFor: TimeInterval = 20) async {
         guard settings.watchesInbox, phase == .idle else { return }
         // One pass at a time, and this is not belt-and-braces. Launch fires both
         // the initial `.task` and the become-active handler, and measured on a
@@ -203,7 +203,7 @@ final class SessionModel {
             await inFlight.value
             return
         }
-        let run = Task { await runInbox() }
+        let run = Task { await runInbox(settledFor: settledFor) }
         inboxRun = run
         await run.value
         inboxRun = nil
@@ -211,11 +211,13 @@ final class SessionModel {
 
     private var inboxRun: Task<Void, Never>?
 
-    private func runInbox() async {
+    private func runInbox(settledFor: TimeInterval) async {
         let inbox = settings.inboxDirectory
         try? InboxWatcher.prepare(inbox)
 
-        let waiting = await Task.detached { InboxWatcher.pending(in: inbox) }.value
+        let waiting = await Task.detached {
+            InboxWatcher.pending(in: inbox, settledFor: settledFor)
+        }.value
         inboxPending = waiting.count
         guard !waiting.isEmpty else { return }
         Self.log.info("inbox: \(waiting.count) recording(s) waiting")
@@ -229,6 +231,35 @@ final class SessionModel {
             inboxPending = max(0, inboxPending - 1)
         }
         inboxWorking = nil
+    }
+
+    /// Copy recordings into the inbox and write them up now.
+    ///
+    /// `settledFor: 0` because a file chosen in an open panel is finished by
+    /// definition. The twenty-second wait exists for files a sync client is
+    /// still extending, and applying it here would make a deliberate action sit
+    /// there apparently doing nothing.
+    func addRecordings(_ urls: [URL]) async {
+        let inbox = settings.inboxDirectory
+        try? InboxWatcher.prepare(inbox)
+        for url in urls {
+            var destination = inbox.appending(path: url.lastPathComponent)
+            var suffix = 2
+            while FileManager.default.fileExists(atPath: destination.path(percentEncoded: false)) {
+                let stem = url.deletingPathExtension().lastPathComponent
+                destination = inbox.appending(path: "\(stem) \(suffix).\(url.pathExtension)")
+                suffix += 1
+            }
+            // Copied, never moved: the file belongs to the user and may be the
+            // only copy of it.
+            do {
+                try FileManager.default.copyItem(at: url, to: destination)
+            } catch {
+                Self.log.error("inbox: could not copy \(url.lastPathComponent, privacy: .public)")
+                statusLine = "Couldn't add \(url.lastPathComponent)."
+            }
+        }
+        await processInbox(settledFor: 0)
     }
 
     private func writeUp(_ item: InboxWatcher.Pending) async {
