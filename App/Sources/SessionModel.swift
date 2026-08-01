@@ -217,12 +217,22 @@ final class SessionModel {
         // finished pass either way.
         if let inFlight = inboxRun {
             await inFlight.value
-            return
+            // An automatic pass has nothing of its own waiting and is finished
+            // here. A manual one is not: it copied its file in *after* the pass
+            // it just joined had listed the folder, so that file is in neither
+            // pass and the next one is a wake or a return to the app away — off
+            // altogether if "From your phone" is off. It gets its own pass.
+            guard !automatic else { return }
         }
         let run = Task { await runInbox(settledFor: settledFor) }
         inboxRun = run
         await run.value
-        inboxRun = nil
+        // Only if it is still ours. A manual caller that joined this run starts
+        // the next one the instant this task completes, and the two resumptions
+        // are not ordered — clearing unconditionally can null out *their* run
+        // and let a third caller start a pass alongside it, which is the
+        // double-write this whole property exists to prevent.
+        if inboxRun == run { inboxRun = nil }
     }
 
     private var inboxRun: Task<Void, Never>?
@@ -261,6 +271,17 @@ final class SessionModel {
         await processInbox(settledFor: 0, automatic: false)
     }
 
+    /// What the picker and the window's drop target will take.
+    ///
+    /// `isFileURL` is the load-bearing half. `dropDestination(for: URL.self)`
+    /// also receives a link dragged out of a browser, and
+    /// `https://arxiv.org/pdf/2301.00001.pdf` passes an extension test happily;
+    /// `FileManager.copyItem` then reads that remote URL's *path* as a local
+    /// one, so this is not only about which error the user sees.
+    static func isPDF(_ url: URL) -> Bool {
+        url.isFileURL && url.pathExtension.lowercased() == "pdf"
+    }
+
     /// Copy PDFs into the inbox and read them now. `settledFor: 0` for the same
     /// reason as `addRecordings`.
     ///
@@ -268,7 +289,7 @@ final class SessionModel {
     /// calls, and a drop carries whatever was dragged.
     func addPDFs(_ urls: [URL]) async {
         try? InboxWatcher.prepare(settings.inboxDirectory)
-        urls.filter { $0.pathExtension.lowercased() == "pdf" }.forEach(copyIntoInbox)
+        urls.filter(Self.isPDF).forEach(copyIntoInbox)
         await processInbox(settledFor: 0, automatic: false)
     }
 

@@ -35,10 +35,20 @@ struct RecordView: View {
         }
         .defaultScrollAnchor(.top)
         .background(Palette.board)
-        // Refused rather than accepted-and-ignored when nothing dragged is a
-        // PDF: returning true would show the drop as having worked.
+        // Refused rather than accepted-and-ignored, in both directions.
+        // Returning true would animate the drag as having worked, and:
+        //
+        // - Only while idle. `addPDFs` copies into the inbox and then asks for a
+        //   pass, and a pass declines while a lecture is recording — the file
+        //   would sit there with nothing on screen naming it, waiting for a
+        //   wake or a return to the app that only happens at all if "From your
+        //   phone" is on. The picker and the link field beside it are reachable
+        //   in the same one phase, for the same reason.
+        // - Only file URLs, and only PDFs. A link dragged out of a browser
+        //   arrives here as a URL too; see `SessionModel.isPDF`.
         .dropDestination(for: URL.self) { urls, _ in
-            let pdfs = urls.filter { $0.pathExtension.lowercased() == "pdf" }
+            guard session.phase == .idle else { return false }
+            let pdfs = urls.filter(SessionModel.isPDF)
             guard !pdfs.isEmpty else { return false }
             Task { await session.addPDFs(pdfs) }
             return true
@@ -92,7 +102,18 @@ struct RecordView: View {
         case .recording: return "\(displayCourse) · \(LectureNote.day())"
         case .preparing, .finishing: return session.statusLine
         case .failed: return session.statusLine
-        case .idle: return "Notes are written when you stop."
+        case .idle:
+            // Idle is the one phase in which a PDF or a link can be handed in,
+            // so it is also the only phase in which their outcome is written —
+            // and until this line it was the one phase that never drew it. Every
+            // `SourceFailure` message went to a field nothing rendered.
+            //
+            // `stateWord` is the resting value of `statusLine`, the same
+            // comparison the state mark's accessibility value makes: equal means
+            // nothing has happened yet and the explanatory line is what to say.
+            return session.statusLine == session.stateWord
+                ? "Notes are written when you stop."
+                : session.statusLine
         }
     }
 

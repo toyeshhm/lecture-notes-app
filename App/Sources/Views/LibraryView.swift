@@ -211,10 +211,23 @@ private struct CoursePlate: View {
         guard let newest = lectures.first else { return nil }
         // "Lectures", not "sheets": the herbarium metaphor went with the
         // botanical plates, and a student has lectures.
-        let count = lectures.count == 1 ? "1 lecture" : "\(lectures.count) lectures"
+        //
+        // Readings are counted apart rather than folded in. `scan` files them in
+        // the same array because they live in the same folder, but a course with
+        // three lectures and two chapters is not a course with five lectures —
+        // the same mistake the inbox counter avoids by saying "file".
+        let readings = lectures.filter(\.isReading).count
+        let recorded = lectures.count - readings
+        var counts: [String] = []
+        if recorded > 0 {
+            counts.append(recorded == 1 ? "1 lecture" : "\(recorded) lectures")
+        }
+        if readings > 0 {
+            counts.append(readings == 1 ? "1 reading" : "\(readings) readings")
+        }
         // `scan` returns newest first, so the head of the list is the last
         // lecture recorded.
-        return "\(count) · latest \(newest.date)"
+        return "\(counts.joined(separator: " · ")) · latest \(newest.date)"
     }
 
     // MARK: Rows
@@ -305,6 +318,20 @@ private struct LectureRow: View {
         return "reading"
     }
 
+    /// The same field in words, for the same reason `spokenDuration` exists:
+    /// "PDF · 24 pp" is set for the eye, and read out it is "P D F, 24 p p" with
+    /// the interpunct said as nothing at all.
+    private var spokenSource: String {
+        guard lecture.isReading else { return spokenDuration }
+        if let pages = lecture.pages, pages > 0 {
+            return pages == 1 ? "PDF, 1 page" : "PDF, \(pages) pages"
+        }
+        if let ref = lecture.sourceRef, let host = URL(string: ref)?.host() {
+            return "Web page, \(host)"
+        }
+        return "Reading"
+    }
+
     /// `status: complete` is what the final pass writes. Anything else — the
     /// `recording` a crashed session leaves behind, or a value a person typed —
     /// is not a finished note.
@@ -377,7 +404,7 @@ private struct LectureRow: View {
             lecture.topic,
             displayCourse,
             lecture.date,
-            lecture.isReading ? sourceText : spokenDuration,
+            spokenSource,
         ]
         if !lecture.isReading {
             parts.append(HatchSwatch.densityDescription(wordsPerMinute: lecture.wordsPerMinute))
