@@ -218,14 +218,49 @@ private struct Parsed {
         }
     }
 
-    /// The renderer quotes `title` and nothing else, but stripping a matched
-    /// pair everywhere costs one line and survives a user quoting another key.
+    /// The renderer quotes `title` and `source`, but stripping a matched pair
+    /// everywhere costs one line and survives a user quoting another key.
+    ///
+    /// The escapes `yamlSafe` writes are undone here, and only inside the
+    /// quotes — a backslash in a bare scalar is a backslash, which is what YAML
+    /// itself says. Without this half the round trip is lossy: a title of
+    /// `Trees "and" graphs` comes back with literal backslashes in it, and
+    /// `LectureActions.rerun` feeds that straight back into the renderer, which
+    /// escapes it again. Every re-run doubles them.
     private func unquote(_ raw: Substring) -> String {
         let trimmed = raw.trimmingCharacters(in: .whitespaces)
         guard trimmed.count >= 2, trimmed.hasPrefix("\""), trimmed.hasSuffix("\"") else {
             return trimmed
         }
-        return String(trimmed.dropFirst().dropLast())
+        return unescaped(trimmed.dropFirst().dropLast())
+    }
+
+    /// One left-to-right pass, not four `replacingOccurrences` calls: undoing
+    /// `\\` first would turn the escaped text `\n` — two characters the user
+    /// typed — into a real line break on the next pass.
+    private func unescaped(_ body: Substring) -> String {
+        var out = ""
+        var escaping = false
+        for character in body {
+            if escaping {
+                switch character {
+                case "n": out.append("\n")
+                case "r": out.append("\r")
+                // `\"` and `\\`, plus anything a person escaped by hand: the
+                // character itself is the only reading that cannot lose it.
+                default: out.append(character)
+                }
+                escaping = false
+            } else if character == "\\" {
+                escaping = true
+            } else {
+                out.append(character)
+            }
+        }
+        // A trailing lone backslash is not something the renderer writes, but a
+        // hand-edited note can carry one and dropping it would edit the title.
+        if escaping { out.append("\\") }
+        return out
     }
 }
 

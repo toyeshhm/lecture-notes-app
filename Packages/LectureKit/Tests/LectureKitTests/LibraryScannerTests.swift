@@ -216,6 +216,32 @@ func crlfNoteIsRead() throws {
     #expect(found.wordsPerMinute == 2)
 }
 
+@Test("a title with a quote in it survives being written and read back")
+func escapedTitleRoundTrips() throws {
+    let sandbox = try ScanSandbox()
+    // The renderer escapes these so a stray quote cannot take the whole
+    // frontmatter block down. Reading them back unescaped is the other half of
+    // that: without it the library shows the backslashes, and re-running the
+    // note feeds them to the renderer again — which escapes them again, every
+    // time, without bound.
+    let topic = #"Trees "and" \graphs"#
+    let note = lecture(course: "MATH 101", topic: topic)
+    try sandbox.write(
+        NoteRenderer().render(note),
+        to: "Courses/MATH 101/Lectures/2026-07-30 — Trees.md")
+
+    let found = try #require(
+        LibraryScanner.scan(settings: sandbox.settings).first?.lectures.first
+    )
+    #expect(found.topic == topic)
+
+    // Rendering what was read produces the same file, which is what makes a
+    // re-run a repair rather than a slow corruption.
+    var again = note
+    again.topic = found.topic
+    #expect(NoteRenderer().render(again) == NoteRenderer().render(note))
+}
+
 @Test("a frontmatter date of the wrong shape falls back to the filename")
 func malformedDateFallsBack() throws {
     let sandbox = try ScanSandbox()
