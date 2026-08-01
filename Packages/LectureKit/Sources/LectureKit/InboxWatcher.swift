@@ -106,21 +106,9 @@ public enum InboxWatcher {
     /// that cannot be regenerated, and a bug in the notes pass is not a reason
     /// to have destroyed it — it is the reason to still have it.
     public static func archive(_ url: URL, in directory: URL) throws -> URL {
-        let destination = archiveDestination(url, in: directory)
-        try FileManager.default.createDirectory(
-            at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try FileManager.default.moveItem(at: url, to: destination)
-        return destination
-    }
-
-    /// Where `archive` will put a file, worked out without moving it.
-    ///
-    /// A reading's note records the PDF in its `source:` frontmatter, and the
-    /// file is archived the moment that note reaches disk — so the frontmatter
-    /// has to name the file's next home rather than its current one, or the
-    /// note's only route back to its source names a path that no longer exists.
-    public static func archiveDestination(_ url: URL, in directory: URL) -> URL {
         let done = directory.appending(path: "Written up", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: done, withIntermediateDirectories: true)
+
         var destination = done.appending(path: url.lastPathComponent)
         // A second recording sharing a name would otherwise overwrite the first.
         var suffix = 2
@@ -129,6 +117,7 @@ public enum InboxWatcher {
             destination = done.appending(path: "\(stem) \(suffix).\(url.pathExtension)")
             suffix += 1
         }
+        try FileManager.default.moveItem(at: url, to: destination)
         return destination
     }
 

@@ -202,8 +202,12 @@ final class SessionModel {
     /// Called at launch and whenever the Mac wakes, so a lecture recorded on a
     /// phone on the way home is written up the next time the laptop is opened
     /// rather than waiting to be noticed.
-    func processInbox(settledFor: TimeInterval = 20) async {
-        guard settings.watchesInbox, phase == .idle else { return }
+    /// - Parameter automatic: whether the app started this pass on its own.
+    ///   "From your phone" turns those off. It does not turn off a file the user
+    ///   has just picked or dropped: that copies into the inbox and would then
+    ///   sit there forever, with no error and no later pass that would find it.
+    func processInbox(settledFor: TimeInterval = 20, automatic: Bool = true) async {
+        guard !automatic || settings.watchesInbox, phase == .idle else { return }
         // One pass at a time, and this is not belt-and-braces. Launch fires both
         // the initial `.task` and the become-active handler, and measured on a
         // real inbox they raced: two passes both listed the same file before
@@ -254,7 +258,7 @@ final class SessionModel {
     func addRecordings(_ urls: [URL]) async {
         try? InboxWatcher.prepare(settings.inboxDirectory)
         urls.forEach(copyIntoInbox)
-        await processInbox(settledFor: 0)
+        await processInbox(settledFor: 0, automatic: false)
     }
 
     /// Copy PDFs into the inbox and read them now. `settledFor: 0` for the same
@@ -265,7 +269,7 @@ final class SessionModel {
     func addPDFs(_ urls: [URL]) async {
         try? InboxWatcher.prepare(settings.inboxDirectory)
         urls.filter { $0.pathExtension.lowercased() == "pdf" }.forEach(copyIntoInbox)
-        await processInbox(settledFor: 0)
+        await processInbox(settledFor: 0, automatic: false)
     }
 
     /// Puts one file in the inbox under a name nothing else there is using.
@@ -320,6 +324,7 @@ final class SessionModel {
         statusLine = "Writing up \(item.url.lastPathComponent)…"
 
         let extracted: Extracted
+        let day: String
         switch item.kind {
         case .audio:
             Self.log.info("inbox: transcribing \(item.url.lastPathComponent, privacy: .public)")
@@ -335,6 +340,10 @@ final class SessionModel {
                 return
             }
             extracted = Extracted(text: transcript, title: nil, source: .lecture)
+            // The file's own date, not today's. A lecture shared on Friday for a
+            // Wednesday recording belongs to Wednesday, and the date is what the
+            // note is filed and sorted by.
+            day = LectureNote.day(of: item.modified)
 
         case .pdf:
             Self.log.info("inbox: reading \(item.url.lastPathComponent, privacy: .public)")
@@ -344,16 +353,30 @@ final class SessionModel {
                 // actor for that minute — the clock stops, the window stops
                 // drawing, and the app is indistinguishable from hung.
                 var read = try await Task.detached { try PDFReader.read(item.url) }.value
-                // Recorded where the PDF is about to be, not where it is: a
-                // successful write archives it immediately below, so the inbox
-                // path in the frontmatter would be dead before anyone could
-                // follow it.
+                // Archived here, before the note is written, where a recording is
+                // archived after. The note's `source:` is the only route back to
+                // the PDF, so it has to name where the file really is — and the
+                // only way to know that is to have moved it. Working the
+                // destination out in advance writes a path that a failed move
+                // never creates, and nothing afterwards reconciles the two.
+                //
+                // Moving this early costs nothing that the recording ordering
+                // protects. The text is already in hand, so a notes pass that
+                // fails costs a drag back out of `Written up/` rather than a lost
+                // recording — and the PDF is not re-read, re-OCR'd and re-written
+                // up on every inbox pass from now until someone notices.
                 if case .pdf(_, let pages, let ocr) = read.source {
-                    read.source = .pdf(
-                        file: InboxWatcher.archiveDestination(item.url, in: settings.inboxDirectory),
-                        pages: pages, ocr: ocr)
+                    let home = (try? InboxWatcher.archive(item.url, in: settings.inboxDirectory))
+                        ?? item.url
+                    read.source = .pdf(file: home, pages: pages, ocr: ocr)
                 }
                 extracted = read
+                // Today, not the file's date. `copyItem` preserves a PDF's
+                // modification time, so a chapter downloaded three years ago
+                // would file itself under that year and never show up in recent
+                // work. A reading's date is when it was read, which is also what
+                // the link field records — so the two ways in agree.
+                day = LectureNote.day()
             } catch let failure as SourceFailure {
                 Self.log.error("inbox: \(item.url.lastPathComponent, privacy: .public) unreadable")
                 statusLine = failure.message
@@ -366,14 +389,12 @@ final class SessionModel {
             }
         }
 
-        // The file's own date, not today's. A lecture shared on Friday for a
-        // Wednesday recording belongs to Wednesday, and the date is what the
-        // note is filed and sorted by.
-        let filed = await writeUp(
-            extracted, dated: LectureNote.day(of: item.modified), duration: duration(of: item))
-        if filed {
-            // Archived only after the note is safely on disk. Moving first would
-            // lose the file if the write failed.
+        let filed = await writeUp(extracted, dated: day, duration: duration(of: item))
+        if filed, item.kind == .audio {
+            // A recording is archived only after its note is safely on disk, and
+            // is the one thing here that cannot be regenerated: moving it first
+            // would lose it if the write failed, where the next pass would
+            // otherwise find it still waiting.
             _ = try? InboxWatcher.archive(item.url, in: settings.inboxDirectory)
         }
         inboxWorking = nil
