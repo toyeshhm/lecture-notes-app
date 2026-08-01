@@ -110,6 +110,9 @@ img { max-width: 100%; height: auto; display: block; }
   display: flex;
   flex-direction: column;
   background: var(--board);
+  /* Clears the fixed bar. On this breakpoint the hero is a column with the copy
+     above the image, so what the bar would cover is the headline. */
+  padding-top: 4.2rem;
 }
 
 .hero__scene {
@@ -193,6 +196,9 @@ img { max-width: 100%; height: auto; display: block; }
     isolation: isolate;
     min-height: 40rem;
     min-height: min(44rem, 92svh);
+    /* Full bleed again here: the glass sits over the photograph, which is the
+       whole point of it being glass. */
+    padding-top: 0;
   }
   .hero__scene {
     position: absolute;
@@ -524,21 +530,39 @@ code {
 }
 
 /* ---- Site navigation ------------------------------------------------------
-   The page used to be one scroll of nine equally-weighted sections, which is
-   what a README looks like when it is given a stylesheet. Three pages with a
-   persistent bar makes the shape of the thing visible before you read any of
-   it: what it is, how to install it, how it behaves.
+   Glass, and overlaying the hero rather than sitting above it. As a solid strip
+   above a full-bleed photograph it read as a browser chrome bar rather than as
+   part of the page.
 
-   Sticky rather than fixed, and it sits on solid `board` rather than a blurred
-   translucency — the hero photograph behind a frosted bar is the move that
-   makes every dark product site look like every other one. */
+   The glass is 0.82 board plus a blur, and that number is measured rather than
+   picked for looks. Composited over the brightest *blurred* pixel in the top
+   band of the worst scene (the light shaft in `scene-clearing`), it puts `--ink`
+   at 10.4:1 and the amber at 6.1:1. At 0.62 — which looks better — the amber
+   drops to 3.3:1 and fails.
+
+   **No link uses `--ink-dim`.** Over that same pixel the secondary ink measures
+   1.98:1 at 0.62 and still only 3.7:1 at 0.82, so dimming inactive links by
+   colour is not available here at any opacity. Every link is full-strength ink
+   and the current page is marked by a rule, which is the system's own rule
+   anyway: state by shape, not by hue. */
 
 .nav {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 20;
-  background: var(--board);
-  border-bottom: 1px solid var(--edge);
+  background: rgba(10, 15, 11, 0.82);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+  backdrop-filter: blur(16px) saturate(130%);
+  border-bottom: 1px solid rgba(236, 232, 224, 0.09);
+}
+
+/* Safari on older macOS and Firefox with the flag off get no blur, and a
+   translucent bar with nothing behind it is unreadable. They get the solid
+   board instead: the design loses an effect, never a word. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .nav { background: var(--board); }
 }
 
 .nav__in {
@@ -553,10 +577,14 @@ code {
 
 .nav__home {
   font-family: var(--display);
-  font-size: 1.02rem;
+  font-size: 1.05rem;
   color: var(--ink);
   text-decoration: none;
   margin-right: auto;
+  /* Kept on one line here rather than with an `&nbsp;` in the markup: the
+     display face renders a no-break space visibly wider than a word space, so
+     the wordmark read as "Lecture  Notes". */
+  white-space: nowrap;
 }
 
 .nav__links {
@@ -568,34 +596,34 @@ code {
 
 .nav__links a {
   font-size: 0.9rem;
-  color: var(--ink-dim);
-  text-decoration: none;
-  padding-bottom: 2px;
-  border-bottom: 1px solid transparent;
-}
-
-.nav__links a:hover { color: var(--ink); }
-
-/* The current page is marked by a rule under it, not by the accent. The amber
-   means "live" or "this is the action" everywhere else in the product, and
-   spending it on a nav item would make it mean "you are here" as well. */
-.nav__links a[aria-current="page"] {
   color: var(--ink);
-  border-bottom-color: var(--ink-dim);
+  text-decoration: none;
+  padding-bottom: 3px;
+  border-bottom: 1px solid transparent;
+  transition: border-color 140ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.nav__go {
-  color: var(--amber) !important;
-  border-bottom-color: transparent !important;
-}
+.nav__links a:hover { border-bottom-color: rgba(236, 232, 224, 0.45); }
 
+.nav__links a[aria-current="page"] { border-bottom-color: var(--ink); }
+
+.nav__go { color: var(--amber) !important; }
 .nav__go:hover { border-bottom-color: var(--amber) !important; }
 
+@media (prefers-reduced-motion: reduce) {
+  .nav__links a { transition: none; }
+}
+
 @media (max-width: 32em) {
-  .nav__in { gap: 0.7rem 1.1rem; padding: 0.75rem 1.15rem; }
+  .nav__in { gap: 0.55rem 1.1rem; padding: 0.7rem 1.15rem; }
   .nav__home { margin-right: 0; width: 100%; }
   .nav__links { gap: 1.1rem; }
 }
+
+/* The bar is out of flow, so anything it would cover has to make room for it.
+   `scroll-padding-top` is the half people forget: without it every in-page
+   anchor lands with its heading underneath the glass. */
+html { scroll-padding-top: 4.5rem; }
 
 /* ---- Inner page header ----------------------------------------------------
    Shorter than the home hero, and on a different scene: three of the four
@@ -634,7 +662,7 @@ code {
   position: relative;
   max-width: 62rem;
   margin: 0 auto;
-  padding: 3.5rem 1.5rem 2.6rem;
+  padding: 6.2rem 1.5rem 2.6rem;
   width: 100%;
 }
 
@@ -667,7 +695,7 @@ code {
 
 @media (max-width: 32em) {
   .ph { min-height: 16rem; }
-  .ph__body { padding: 2.4rem 1.15rem 1.8rem; }
+  .ph__body { padding: 5.4rem 1.15rem 1.8rem; }
 }
 
 /* ---- Requirements teaser -------------------------------------------------- */
