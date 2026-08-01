@@ -557,6 +557,12 @@ struct SettingsView: View {
             }
 
             markRow(
+                "From your phone", isOn: session.settings.watchesInbox,
+                named: "Write up recordings dropped in the vault inbox",
+                hint: "Audio shared into _Lecture Inbox in your vault is transcribed and filed like any other lecture. Record with Voice Memos, share it to the folder, and it is written up next time this Mac is awake."
+            ) { on in update { $0.watchesInbox = on } }
+
+            markRow(
                 "Transcript", isOn: session.settings.keepTranscript, named: "Keep the transcript",
                 hint: "The full text is kept at the bottom of the note."
             ) { on in update { $0.keepTranscript = on } }

@@ -79,7 +79,7 @@ struct RecordView: View {
 
     private var subtitle: String {
         switch session.phase {
-        case .recording: return "\(displayCourse) · \(LectureNote.today())"
+        case .recording: return "\(displayCourse) · \(LectureNote.day())"
         case .preparing, .finishing: return session.statusLine
         case .failed: return session.statusLine
         case .idle: return "Notes are written when you stop."
@@ -193,6 +193,7 @@ struct RecordView: View {
 
     @ViewBuilder private func content(for phase: SessionModel.Phase) -> some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
+            inbox
             switch phase {
             case .idle where session.transcript.isEmpty:
                 readyNotes
@@ -204,6 +205,32 @@ struct RecordView: View {
         }
         .frame(maxWidth: Spacing.sheetMax, alignment: .leading)
         .padding(Spacing.xl)
+    }
+
+    /// Recordings that arrived from somewhere else and are being written up.
+    ///
+    /// Shown because it is otherwise invisible work that spends subscription
+    /// quota: the app would sit there apparently idle while calling a model
+    /// about a lecture the user does not remember handing it.
+    @ViewBuilder private var inbox: some View {
+        if session.inboxPending > 0 || session.inboxWorking != nil {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                sectionRule("From your phone")
+                if let working = session.inboxWorking {
+                    Text("Writing up \(working)")
+                        .font(Typography.bodyText)
+                        .foregroundStyle(Palette.ink)
+                }
+                if session.inboxPending > 0 {
+                    Text(session.inboxPending == 1
+                        ? "1 more recording waiting."
+                        : "\(session.inboxPending) more recordings waiting.")
+                        .font(Typography.ui)
+                        .foregroundStyle(Palette.inkSoft)
+                }
+            }
+            .padding(.bottom, Spacing.lg)
+        }
     }
 
     /// What the app is about to do, in the words of someone who has not read the

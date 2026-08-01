@@ -1,3 +1,4 @@
+import AppKit
 import LectureKit
 import SwiftUI
 
@@ -10,6 +11,7 @@ import SwiftUI
 struct RootView: View {
 
     @Environment(SessionModel.self) private var session
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var section: AppSection = .record
     /// The selected course. Nil is every course.
@@ -33,11 +35,31 @@ struct RootView: View {
             FirstRunView().environment(session)
         }
         .task {
-            // Before the slip, and deliberately not awaited: loading the models
-            // takes ~110s and the whole point is that it happens while the user
-            // is reading this screen rather than after they press record.
+            // Before the slip, and deliberately not awaited: the first model load
+            // on a machine takes ~110s and the whole point is that it happens
+            // while the user is reading this screen rather than after they press
+            // record.
             session.warmUp()
             showingFirstRun = await FirstRunView.shouldPresent(settings: session.settings)
+            await session.processInbox()
+        }
+        // A lecture recorded on a phone and shared into the vault arrives while
+        // the Mac is shut. Waking is when it can be noticed, and it is the only
+        // signal that does not need a timer running all day.
+        //
+        // `NSWorkspace.shared.notificationCenter`, not `NotificationCenter
+        // .default`. Workspace notifications are posted to their own centre, and
+        // observing the default one compiles, runs, and never fires — the exact
+        // shape of bug that looks like "the feature doesn't work sometimes".
+        .onReceive(NSWorkspace.shared.notificationCenter.publisher(
+            for: NSWorkspace.didWakeNotification)) { _ in
+            Task { await session.processInbox() }
+        }
+        // Also on returning to the app: the Mac may have been awake the whole
+        // time while a file synced in behind it.
+        .onChange(of: scenePhase) { previous, current in
+            guard previous != .active, current == .active else { return }
+            Task { await session.processInbox() }
         }
         // A recording takes the pane whenever it starts, from wherever you were.
         // Coming back from a browse to find the capture screen gone is how you

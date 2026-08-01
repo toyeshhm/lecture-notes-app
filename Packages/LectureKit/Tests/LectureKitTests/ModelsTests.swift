@@ -168,7 +168,7 @@ struct NoteModelTests {
 
     @Test("today is local-time YYYY-MM-DD")
     func todayFormat() {
-        let s = LectureNote.today()
+        let s = LectureNote.day()
         #expect(s.count == 10)
         #expect(s.dropFirst(4).first == "-")
     }

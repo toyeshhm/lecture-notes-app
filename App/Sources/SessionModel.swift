@@ -47,7 +47,7 @@ final class SessionModel {
 
     private var capture: AudioCapture?
     private var transcriber: Transcriber?
-    private var note = LectureNote(date: LectureNote.today(), course: unsortedFolder)
+    private var note = LectureNote(date: LectureNote.day(), course: unsortedFolder)
     private var tasks: [Task<Void, Never>] = []
     private var workDirectory: URL?
     /// The models, loading or loaded. See `warmUp()`.
@@ -177,6 +177,115 @@ final class SessionModel {
     }
 
     private static let log = Logger(subsystem: "LectureNotes", category: "session")
+
+    // MARK: Inbox
+
+    /// Recordings made elsewhere and waiting to be written up.
+    private(set) var inboxPending = 0
+    /// The file currently being written up, if any.
+    private(set) var inboxWorking: String?
+
+    /// Write up anything dropped into the vault's inbox.
+    ///
+    /// Called at launch and whenever the Mac wakes, so a lecture recorded on a
+    /// phone on the way home is written up the next time the laptop is opened
+    /// rather than waiting to be noticed.
+    func processInbox() async {
+        guard settings.watchesInbox, phase == .idle else { return }
+        // One pass at a time, and this is not belt-and-braces. Launch fires both
+        // the initial `.task` and the become-active handler, and measured on a
+        // real inbox they raced: two passes both listed the same file before
+        // either archived it, so one lecture was transcribed twice and written
+        // up twice, at twice the subscription cost. Joining the run in flight
+        // rather than starting a second is the fix; the caller still awaits a
+        // finished pass either way.
+        if let inFlight = inboxRun {
+            await inFlight.value
+            return
+        }
+        let run = Task { await runInbox() }
+        inboxRun = run
+        await run.value
+        inboxRun = nil
+    }
+
+    private var inboxRun: Task<Void, Never>?
+
+    private func runInbox() async {
+        let inbox = settings.inboxDirectory
+        try? InboxWatcher.prepare(inbox)
+
+        let waiting = await Task.detached { InboxWatcher.pending(in: inbox) }.value
+        inboxPending = waiting.count
+        guard !waiting.isEmpty else { return }
+        Self.log.info("inbox: \(waiting.count) recording(s) waiting")
+
+        for item in waiting {
+            // A recording that arrives while one is being written up waits for
+            // the next pass, and a lecture starting takes priority over both:
+            // the live pipeline needs the transcriber and the subscription.
+            guard phase == .idle else { break }
+            await writeUp(item)
+            inboxPending = max(0, inboxPending - 1)
+        }
+        inboxWorking = nil
+    }
+
+    private func writeUp(_ item: InboxWatcher.Pending) async {
+        inboxWorking = item.url.lastPathComponent
+        statusLine = "Writing up \(item.url.lastPathComponent)…"
+        Self.log.info("inbox: transcribing \(item.url.lastPathComponent, privacy: .public)")
+
+        guard let transcript = try? await Transcriber.transcribeFile(item.url),
+              !transcript.split(whereSeparator: \.isWhitespace).isEmpty
+        else {
+            // Left in place rather than archived: an empty transcript is more
+            // often a file that has not finished syncing than a silent lecture,
+            // and the next pass should try again.
+            Self.log.error("inbox: no speech in \(item.url.lastPathComponent, privacy: .public)")
+            statusLine = "Couldn't read \(item.url.lastPathComponent)."
+            return
+        }
+
+        // The file's own date, not today's. A lecture shared on Friday for a
+        // Wednesday recording belongs to Wednesday, and the date is what the
+        // note is filed and sorted by.
+        var note = LectureNote(date: LectureNote.day(of: item.modified), course: unsortedFolder)
+        note.transcript = transcript
+        // Read from the file. Without this the note says `duration_min: 0`, which
+        // is a claim about the lecture rather than an absence of one, and the
+        // library sorts and labels on it.
+        note.duration = (try? AVAudioFile(forReading: item.url))
+            .map { Double($0.length) / $0.fileFormat.sampleRate } ?? 0
+
+        let candidates = CourseDetector.candidates(in: settings.coursesDir)
+        if let guess = await CourseDetector(claude: claude)
+            .detect(transcript: transcript, candidates: candidates, model: settings.detectModel) {
+            note.course = settings.pinnedCourse ?? CourseDetector.resolveFolder(guess, candidates: candidates)
+            note.topic = guess.topic
+            if settings.pinnedCourse == nil {
+                note.detectedCourse = guess.course
+                note.detectionConfidence = guess.confidence
+            }
+        }
+
+        if let markdown = try? await claude.run(
+            prompt: NoteWriterPrompts.finalNotes(transcript: transcript, course: note.course),
+            system: Prompts.final, model: settings.finalModel, timeout: 600) {
+            note.finalNotes = fixCallouts(markdown)
+        }
+
+        let written = writer.saveAll(&note, settings: settings)
+        guard !written.isEmpty else {
+            Self.log.error("inbox: could not file \(item.url.lastPathComponent, privacy: .public)")
+            return
+        }
+        // Archived only after the note is safely on disk. Moving first would
+        // lose the recording if the write failed.
+        _ = try? InboxWatcher.archive(item.url, in: settings.inboxDirectory)
+        Self.log.info("inbox: filed under \(note.course, privacy: .public)")
+        statusLine = "Wrote up \(note.topic)"
+    }
 
     func start() {
         guard !phase.isBusy, phase != .recording else { return }
@@ -363,7 +472,7 @@ final class SessionModel {
     // MARK: Helpers
 
     private func reset() {
-        note = LectureNote(date: LectureNote.today(), course: settings.pinnedCourse ?? unsortedFolder)
+        note = LectureNote(date: LectureNote.day(), course: settings.pinnedCourse ?? unsortedFolder)
         transcript = ""
         liveNotes = ""
         elapsed = 0

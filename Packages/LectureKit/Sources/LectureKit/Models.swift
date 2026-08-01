@@ -195,6 +195,8 @@ public struct Settings: Sendable, Codable, Equatable {
     public var claudePath: URL?
     /// Pin the course instead of detecting it. Detection still supplies the topic.
     public var pinnedCourse: String?
+    /// Watch the inbox for recordings made elsewhere, typically on a phone.
+    public var watchesInbox: Bool
 
     public init(
         vault: URL,
@@ -209,7 +211,8 @@ public struct Settings: Sendable, Codable, Equatable {
         keepAudio: Bool = false,
         mirrors: [MirrorTarget] = [],
         claudePath: URL? = nil,
-        pinnedCourse: String? = nil
+        pinnedCourse: String? = nil,
+        watchesInbox: Bool = true
     ) {
         self.vault = PathComponent.normalised(vault)
         self.coursesSubdir = coursesSubdir
@@ -224,10 +227,20 @@ public struct Settings: Sendable, Codable, Equatable {
         self.mirrors = mirrors
         self.claudePath = claudePath
         self.pinnedCourse = pinnedCourse
+        self.watchesInbox = watchesInbox
     }
 
     public var targetID: VaultTargetID {
         VaultTargetID(vault: vault, coursesSubdir: coursesSubdir, lecturesSubdir: lecturesSubdir)
+    }
+
+    /// Where recordings made elsewhere are dropped.
+    ///
+    /// At the vault root, deliberately outside `coursesSubdir`: everything under
+    /// the courses folder is treated as a course, so an inbox in there would
+    /// appear in the sidebar as a course named after the folder.
+    public var inboxDirectory: URL {
+        PathComponent.normalised(vault).appending(path: "_Lecture Inbox")
     }
 
     public var coursesDirectory: URL {
@@ -337,11 +350,15 @@ public struct LectureNote: Sendable, Equatable {
         if !trimmed.isEmpty { sections.append(trimmed) }
     }
 
-    /// Today's date as YYYY-MM-DD in local time.
-    public static func today(_ now: Date = Date()) -> String {
+    /// A date as YYYY-MM-DD in local time.
+    ///
+    /// Named for the argument rather than for the default: a recording written
+    /// up from the inbox is dated when it was *made*, which can be days before
+    /// the Mac ever saw it, and `today(someOldDate)` reads like a bug.
+    public static func day(of moment: Date = Date()) -> String {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = .current
-        let c = calendar.dateComponents([.year, .month, .day], from: now)
+        let c = calendar.dateComponents([.year, .month, .day], from: moment)
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 }
