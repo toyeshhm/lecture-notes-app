@@ -46,6 +46,9 @@ struct SettingsView: View {
     @State private var newCourseCode = ""
     @State private var newCourseName = ""
     @State private var rosterError: String?
+    /// The Claude sign-in probe, nil until the first one returns.
+    @State private var claudeCheck: Preflight.Check?
+    @State private var isCheckingClaude = false
 
     /// A course as this screen sees it: on the roster, in the vault, or both.
     struct RosterEntry {
@@ -608,7 +611,73 @@ struct SettingsView: View {
                     }
                 }
             }
+
+            Row(
+                label: "Sign-in",
+                hint: "Notes are written under your own Claude subscription rather than metered API credit, so the CLI has to be signed in. The app cannot sign in for you — Claude's login runs in a terminal."
+            ) {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
+                        DeterminationMark(state: claudeCheck?.state)
+                        Text(claudeCheck?.detail ?? "Checking…")
+                            .font(Typography.ui)
+                            .foregroundStyle(Palette.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: Spacing.measure, alignment: .leading)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(
+                        "\(DeterminationMark.word(for: claudeCheck?.state)). "
+                            + (claudeCheck?.detail ?? "Checking"))
+
+                    HStack(spacing: Spacing.lg) {
+                        // Offered only when there is something to fix. A sign-in
+                        // button on an already-signed-in row invites a trip to a
+                        // terminal that had no purpose.
+                        if claudeCheck?.state != .ok {
+                            action("Open Terminal and sign in") { signIn() }
+                        }
+                        action(isCheckingClaude ? "Checking…" : "Check again") {
+                            Task { await refreshClaudeCheck() }
+                        }
+                        .disabled(isCheckingClaude)
+                    }
+                }
+            }
         }
+        .task { await refreshClaudeCheck() }
+    }
+
+    /// Run `claude` in Terminal.
+    ///
+    /// The app cannot perform the OAuth itself and should not pretend to: the
+    /// subscription credential belongs to the CLI, which is the whole reason
+    /// notes cost quota rather than API credit. Claude Code prompts for sign-in
+    /// on its own when it starts unauthenticated, so launching it *is* the
+    /// remedy — there is no argument to pass, because `/login` is typed inside
+    /// its prompt rather than on the command line.
+    ///
+    /// Opening the binary *with* Terminal rather than writing a temporary
+    /// `.command` file: no script to leave behind, no executable bit to set, and
+    /// no AppleScript, which would need an automation entitlement and a consent
+    /// prompt for a job that is one `open -a` underneath.
+    private func signIn() {
+        guard let binary = session.settings.claudePath ?? ClaudeRunner.locate(),
+            let terminal = NSWorkspace.shared.urlForApplication(
+                withBundleIdentifier: "com.apple.Terminal")
+        else { return }
+        NSWorkspace.shared.open(
+            [binary], withApplicationAt: terminal, configuration: NSWorkspace.OpenConfiguration())
+    }
+
+    /// Re-probe. `Preflight.claudeCheck` spawns the CLI and makes one real model
+    /// call, which is the only way to tell "installed" from "signed in" — so it
+    /// is run on appear and on request, never on every keystroke.
+    private func refreshClaudeCheck() async {
+        guard !isCheckingClaude else { return }
+        isCheckingClaude = true
+        defer { isCheckingClaude = false }
+        claudeCheck = await Preflight.claudeCheck(settings: session.settings)
     }
 
     /// What the app finds on its own when no path is set. Naming the located

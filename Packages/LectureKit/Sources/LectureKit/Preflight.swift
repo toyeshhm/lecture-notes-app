@@ -90,7 +90,7 @@ public struct Preflight: Sendable {
     /// Located *and* logged in. Finding the binary proves nothing: a `claude`
     /// that is present but signed out fails at the last step of a lecture, which
     /// is the most expensive moment for it to fail.
-    static func claudeCheck(settings: Settings) async -> Check {
+    public static func claudeCheck(settings: Settings) async -> Check {
         guard let path = settings.claudePath ?? ClaudeRunner.locate() else {
             return Check(
                 id: "claude", title: "Claude CLI", state: .fail,
