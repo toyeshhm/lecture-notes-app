@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lecture Notes: records a lecture, transcribes it on your Mac, files the notes in Obsidian</title>
+<meta name="description" content="A free, open source macOS app. It records a lecture, transcribes it locally on the Neural Engine, and files structured study notes into your Obsidian vault under the right course.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0A0F0B">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to the description</a>
+
+<header class="hero">
+  <img class="hero__scene"
+       src="assets/scene-clearing.jpg"
+       width="1672" height="941"
+       alt="A rainforest interior at dusk. One shaft of warm light falls through the canopy onto ferns and wet rock; the left of the frame stays in near darkness. The app uses scenes like this one to tell courses apart.">
+  <div class="hero__scrim" aria-hidden="true"></div>
+
+  <div class="hero__body">
+    <p class="hero__name">Lecture&nbsp;Notes</p>
+    <h1 class="hero__line">Press record when the lecturer starts talking. The notes are filed in your vault before you get home.</h1>
+    <p class="hero__sub">A Mac app that records a lecture, transcribes it on this machine's Neural Engine, and writes structured study notes into the right course folder of an Obsidian vault you already keep.</p>
+    <p class="hero__actions">
+      <a class="btn btn--go" href="https://github.com/toyeshhm/lecture-notes-app/releases/tag/v0.1">Download v0.1</a>
+      <a class="btn btn--quiet" href="https://github.com/toyeshhm/lecture-notes-app">Read the source</a>
+    </p>
+    <p class="hero__meta">Apple silicon <span aria-hidden="true">·</span> macOS 14 or later <span aria-hidden="true">·</span> MIT, free <span aria-hidden="true">·</span> needs a paid Claude subscription</p>
+  </div>
+</header>
+
+<main id="main" class="page">
+
+  <section class="reveal" aria-labelledby="first">
+    <h2 id="first">Three things to know before you download it</h2>
+
+    <h3>It is not notarized.</h3>
+    <p>There is no Apple Developer account behind this, so there is no certificate to sign it with and nothing to submit to Apple's notary service. It carries an ad-hoc signature, which proves the bundle has not been altered since it was built and proves nothing at all about who built it. macOS attaches a quarantine flag to anything a browser downloads, and on a quarantined app with no notarization Gatekeeper refuses the first double-click outright and offers you the Trash.</p>
+    <p>The way through, on macOS 15 and later: double-click the app, let macOS refuse, then open <b>System Settings &rsaquo; Privacy &amp; Security</b>, scroll down to the Security section, and click <b>Open Anyway</b> beside the message naming the app. Confirm once and it launches from then on. Older instructions tell you to Control-click and choose Open. Sequoia removed that override for apps that are not notarized, so it no longer does anything. If vouching for a stranger's binary is not a trade you want to make, build it from source instead and the quarantine flag never gets attached in the first place.</p>
+
+    <h3>It needs the <code>claude</code> CLI, logged in to a paid subscription.</h3>
+    <p>Transcription is local and costs nothing. The notes are a different matter: they are written by a model, through the <code>claude</code> command line tool, spending whatever Claude subscription you already pay for. One detection pass at the start, a short pass every few minutes during the lecture, one full pass over everything when you stop. That comes out of your normal usage limit; it is not a separate pool and it is not unlimited. Without a login you get a recording and a transcript and no notes at all. This is the requirement people miss.</p>
+
+    <h3>First launch downloads about 600 MB of models.</h3>
+    <p>The CoreML speech models are fetched once, on first run. Do that at home the night before rather than in the ninety seconds before a lecture starts. There is a whole download screen for it, which exists so you find out early instead of finding out in a lecture theatre.</p>
+  </section>
+
+
+  <section class="reveal" aria-labelledby="file">
+    <h2 id="file">What you actually end up with</h2>
+    <p>Not a transcript, and not a screen inside another app you now have to check. A markdown file in the vault you already keep, which Obsidian reads as an ordinary note. This is the real output for a lecture on binary search trees, trimmed in the middle where the notes run long.</p>
+
+    <figure class="file">
+      <figcaption class="file__path">~/Vault/00 - Courses/CS 314H/Lectures/2026-07-30 — Binary Search Tree Deletion.md</figcaption>
+      <div class="file__sheet">
+<pre class="file__src"><code><span class="c">---</span>
+<span class="k">title:</span> "Binary Search Tree Deletion"
+<span class="k">course:</span> CS 314H
+<span class="k">date:</span> 2026-07-30
+<span class="k">type:</span> lecture
+<span class="k">duration_min:</span> 74
+<span class="k">status:</span> complete
+<span class="k">detected_course:</span> CS 314H
+<span class="k">detection_confidence:</span> high
+<span class="k">tags:</span>
+  - lecture
+  - cs-314h
+<span class="c">---</span></code></pre>
+
+        <div class="file__body">
+          <h3 class="file__h1">Binary Search Tree Deletion</h3>
+          <p class="file__meta"><b>CS 314H</b> · 2026-07-30</p>
+
+          <h4>Deletion, three cases</h4>
+          <ul>
+            <li><b>Leaf.</b> Remove it and null the parent's pointer.</li>
+            <li><b>One child.</b> Splice the child into its place.</li>
+            <li><b>Two children.</b> Copy the in-order successor's key into the node, then delete the successor instead. It has at most one child by construction, so case three reduces to case one or two.</li>
+          </ul>
+
+          <div class="file__callout">
+            <p class="file__callout-h"><span class="file__dot" aria-hidden="true"></span>Likely on exam</p>
+            <p>"The deletion case comes up on the final almost every year."</p>
+          </div>
+
+          <p class="file__cut">Sections, code blocks and the full transcript continue below in the real file.</p>
+        </div>
+      </div>
+    </figure>
+
+    <p class="note">The frontmatter is what Obsidian shows as properties, so the notes sort and filter by course and date without you tagging anything. The callout is there because the lecturer said it out loud; marking what was flagged as examinable is the one editorial judgement the app makes.</p>
+  </section>
+
+  <section class="reveal" aria-labelledby="does">
+    <h2 id="does">What it does</h2>
+
+    <p><b>Audio goes to disk as it arrives.</b> Not buffered in memory and written at the end. If the app crashes, or the battery goes, you lose the transcript and you still have the recording.</p>
+
+    <p><b>Transcription runs here.</b> Parakeet TDT v3 through CoreML, on the Neural Engine. No audio ever leaves the machine. To be exact about what that does and does not mean: the recording stays put, but the <i>text</i> of the transcript is sent to Claude, because that is what the notes get written from.</p>
+
+    <p><b>Notes arrive during the lecture, not only after it.</b> Every few minutes Claude writes an interim set from what has been said so far, so a lecture that ends badly, or a laptop that dies at minute fifty, still produced something worth reading.</p>
+
+    <p><b>When you stop, it starts over properly.</b> The whole recording is transcribed again in a single pass, which is noticeably more accurate than the streaming text, and the note is written from that. The interim notes were the insurance policy; this is the real one.</p>
+
+    <p><b>It works out which course this was.</b> Detection reads the transcript, matches it against the course folders already in your vault and against a roster if you keep one, and returns a course and a topic. When it is not confident it files under <code>_Unsorted</code> and says so in the note. It does not guess. A misfiled note quietly corrupts your revision material three months later, which is a worse outcome than an unfiled one sitting where you can see it.</p>
+
+    <p><b>A second copy, if you want one.</b> Configure a mirror vault and every lecture is written into both, from the same source, in one pass. Nothing is ever synced from a copy.</p>
+
+    <p><b>The output is plain Obsidian markdown.</b> YAML frontmatter with course, date, duration and status. Headings, lists, callouts. Anything the lecturer flagged as examinable comes back as an <code>&gt; [!important]</code> callout, so the thing they said would be on the final is the thing you see first at 11pm. The library is read straight off the vault every time, with no index and no cache, so if you rename or move a note in Obsidian the app agrees with you on the next scan.</p>
+  </section>
+
+  <section class="reveal" aria-labelledby="where">
+    <h2 id="where">Where the notes go</h2>
+    <p>You pick the vault and the two folder names. The course folder itself comes from detection, and is created if it is not there yet.</p>
+    <div class="code" role="group" aria-label="Example vault layout" tabindex="0">
+<pre><code>MyVault/
+  00 - Courses/
+    CS 314H/
+      Lectures/
+        2026-09-02 — Binary Search Tree Deletion.md
+        2026-09-04 — Red-Black Trees.md
+    M 340L/
+      Lectures/
+        2026-09-02 — Alternating Series Test.md
+    _Unsorted/
+      Lectures/
+        2026-09-04 — Course Administration.md</code></pre>
+    </div>
+    <p class="note">That last one is what a lecture looks like when detection was not sure. It carries a warning at the top of the note and the guess in the frontmatter. Detection runs again at the end of the lecture, and if the answer changes the note moves itself rather than leaving a duplicate behind.</p>
+  </section>
+
+  <section class="shots" aria-labelledby="looks">
+    <h2 id="looks" class="shots__head">What it looks like</h2>
+
+    <figure class="shot shot--sq reveal">
+      <img src="assets/app-record.jpg" width="1800" height="1800" loading="lazy" decoding="async"
+           alt="The recording screen. A dark scene photograph across the top with the word RECORDING beside an amber dot, the lecture title Binary Search Tree Deletion, a running clock reading 12:23 and a Stop and Write button. Below it, the live transcript in grey and the interim notes in white, ending in an amber callout marked Likely on exam.">
+      <figcaption>Recording. It is the same screen before and during, because the moment those two states would swap is the moment a lecture is starting, and swapping the pane out then is how you lose your place. The transcript appears as each phrase is confirmed. The notes underneath are rewritten every few minutes.</figcaption>
+    </figure>
+
+    <figure class="shot shot--reader reveal">
+      <img src="assets/app-reader.jpg" width="1598" height="1800" loading="lazy" decoding="async"
+           alt="A finished note open in the reader: the title Binary Search Tree Deletion, a section on the three deletion cases as a bulleted list, an amber-marked callout quoting the lecturer saying the deletion case comes up on the final almost every year, and the full transcript below.">
+      <figcaption>The note, read back. Charter at 17pt on a fixed 68 character measure, whatever the window is doing, because widening a paragraph to fill a monitor is how a long read stops being one. The callout is a thing the lecturer said would be on the exam, quoted rather than paraphrased.</figcaption>
+    </figure>
+
+    <figure class="shot shot--lib reveal">
+      <img src="assets/app-library.jpg" width="1453" height="1800" loading="lazy" decoding="async"
+           alt="The library. Three bordered panels stacked down the page, headed CS 314H, M 340L and Unsorted, each with its own dark forest photograph and a list of dated lectures beneath. One row reads Red-Black Trees, unfinished, the recording ended before the notes were written.">
+      <figcaption>A term of lectures. Courses are told apart by their scene rather than by a colour, which still works at a glance when there are nine of them. The hatch marks at the left of each row encode how fast the lecturer was talking, so a dense derivation and a slow proof look different before you read the title.</figcaption>
+    </figure>
+
+    <figure class="shot shot--first reveal">
+      <img src="assets/app-firstrun.jpg" width="1440" height="1800" loading="lazy" decoding="async"
+           alt="The first run check, headed What a recording needs. Five rows: This Mac ready, Microphone warning, Claude CLI blocking with the commands claude and slash login shown in a box, Transcription models warning with a Download the models button, and Vault ready.">
+      <figcaption>First run checks everything that has to be true before a recording can turn into a note, while there is still time to fix it. Each failure carries the button or the exact command that fixes it. Only one of them actually blocks, and it is the Claude login, every time.</figcaption>
+    </figure>
+
+    <figure class="shot shot--set reveal">
+      <img src="assets/app-settings.jpg" width="977" height="1800" loading="lazy" decoding="async"
+           alt="Settings, a tall single column: vault path and courses and lectures folder names with a worked example of the resulting path, a course list, mirrors, three model pickers for the live, final and detection passes, and recording options for the live pass interval and minimum words.">
+      <figcaption>Settings. Vault, folder names, courses, mirrors, and which model does which of the three passes. Choosing a smaller model for the live pass, or raising the interval between live passes, is the lever if you are watching your usage limit.</figcaption>
+    </figure>
+  </section>
+
+  <section class="reveal" aria-labelledby="run">
+    <h2 id="run">Getting it running</h2>
+
+    <p>Download the zip from the release, unzip it, drag <code>LectureNotes.app</code> into <code>/Applications</code>, then read the first section on this page again before you double-click it, because it will not open. If you would rather not go through System Settings, strip the flag yourself:</p>
+
+    <div class="code" role="group" aria-label="Command to remove the quarantine flag" tabindex="0">
+<pre><code>xattr -dr com.apple.quarantine /Applications/LectureNotes.app</code></pre>
+    </div>
+
+    <p>Either way you are the one vouching for the binary. Building it yourself avoids the question entirely, and takes about a minute:</p>
+
+    <div class="code" role="group" aria-label="Commands to build from source" tabindex="0">
+<pre><code>git clone https://github.com/toyeshhm/lecture-notes-app.git
+cd lecture-notes-app
+brew install xcodegen
+make app</code></pre>
+    </div>
+
+    <p>And if you do not have the CLI yet:</p>
+
+    <div class="code" role="group" aria-label="Commands to install and log in to the Claude CLI" tabindex="0">
+<pre><code>npm install -g @anthropic-ai/claude-code
+claude            <span class="c"># then type /login</span></code></pre>
+    </div>
+
+    <h3>What you need</h3>
+    <dl class="reqs">
+      <dt>An Apple silicon Mac</dt>
+      <dd>M1 or later. The speech models run on the Neural Engine through CoreML. There is no Intel build and no CPU fallback.</dd>
+
+      <dt>macOS 14 or later</dt>
+      <dd>Sonoma. On Sequoia and later, the Open Anyway route described above is the only one through the interface.</dd>
+
+      <dt>The <code>claude</code> CLI, logged in</dt>
+      <dd>A Pro or Max subscription is what makes this free at the margin. An <code>ANTHROPIC_API_KEY</code> works too, but it bills per token.</dd>
+
+      <dt>An Obsidian vault</dt>
+      <dd>Or any folder at all. The notes are plain markdown with YAML frontmatter. Obsidian is where they are pleasant to read, not where they have to live.</dd>
+
+      <dt>About 600 MB of disk</dt>
+      <dd>One time, on first launch, for the models.</dd>
+    </dl>
+
+    <p>Expect to grant microphone access more than once if you build from source. macOS keys that permission to a code signature, an ad-hoc signature is regenerated on every build, so a rebuild can produce something macOS considers a different app. It looks exactly like a bug and it is not one.</p>
+  </section>
+
+  <section class="reveal" aria-labelledby="not">
+    <h2 id="not">What it does not do</h2>
+
+    <p><b>It is not sandboxed, and it is not on the App Store.</b> It spawns the <code>claude</code> binary and writes into a vault that lives wherever you keep it, and neither of those is possible inside an App Sandbox container. That rules out the Mac App Store on its own, notarization aside.</p>
+
+    <p><b>It will spend your subscription.</b> Three kinds of pass per lecture, and a long lecture is a lot of transcript. Settings has the knobs.</p>
+
+    <p><b>It will not guess a course.</b> Covered above, and worth repeating, because the failure mode it avoids is the expensive one.</p>
+
+    <p><b>The notes are a study aid, not a record.</b> They are generated from speech recognition output and they can misattribute or drop things. Check anything that matters against the lecture itself, and do not hand them in as your own work.</p>
+
+    <p><b>Check your institution's policy before you record a lecture.</b> Plenty require explicit permission and some prohibit it outright, and consent rules differ by jurisdiction. That part is on you, not on the tool.</p>
+  </section>
+
+  <section class="close reveal" aria-labelledby="end">
+    <h2 id="end" class="visually-hidden">Download</h2>
+    <p class="close__line">Free, MIT licensed, and the whole thing is on GitHub.</p>
+    <p class="hero__actions">
+      <a class="btn btn--go" href="https://github.com/toyeshhm/lecture-notes-app/releases/tag/v0.1">Download v0.1</a>
+      <a class="btn btn--quiet" href="https://github.com/toyeshhm/lecture-notes-app">Read the source</a>
+    </p>
+  </section>
+
+</main>
+
+<footer class="page foot">
+  <p>Built by <a href="https://github.com/toyeshhm">toyeshhm</a>. Transcription by <a href="https://github.com/FluidInference/FluidAudio">FluidAudio</a> (Apache 2.0), markdown by <a href="https://github.com/swiftlang/swift-markdown">swift-markdown</a>. The scenery was generated with ChatGPT to this project's brief, so it is not under an open licence and a fork does not inherit one; the code is MIT and does.</p>
+</footer>
+
+</body>
+</html>

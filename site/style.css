@@ -1,0 +1,524 @@
+/* Lecture Notes — plainspoken
+   ---------------------------------------------------------------------------
+   TYPEFACES. No webfonts are loaded, and the reason is not page weight. This
+   app only runs on macOS, so every visitor who could actually install it
+   already has the app's own typefaces on disk: Charter (Matthew Carter, 1987)
+   is what the note reader sets its body in, and Hoefler Text is the app's
+   declared fallback for Bluu Next, its display face. Setting the page in them
+   means it is typeset in the product's own type rather than in an
+   approximation of it, at zero bytes and zero external requests. Georgia and
+   the generic serif carry everyone else, who is reading about an app they
+   cannot run. Figures and paths use the app's mono chain.
+
+   COLOUR. Deep Green, from DESIGN.md §1 and §2. Flat fills only; there is no
+   gradient of any kind in this file. One accent, amber, and it only ever marks
+   the action. Measured against the #0A0F0B board: #ECE8E0 body is 15.8:1,
+   #868D84 secondary is 5.7:1, #E8A84A is 9.3:1, board-on-amber is 9.3:1, and
+   the quiet button's border is 3.4:1.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --board:   #0A0F0B;
+  --raised:  #141B16;
+  --fill:    #1E2720;
+  --edge:    #5A6459;   /* 3.4:1 on board: legal as a control boundary */
+  --ink:     #ECE8E0;
+  --ink-dim: #868D84;
+  --amber:   #E8A84A;
+
+  --serif:   "Charter", "Charis SIL", Georgia, "Times New Roman", serif;
+  --display: "Hoefler Text", "Charter", Georgia, serif;
+  --mono:    ui-monospace, "SF Mono", Menlo, "Cascadia Mono", monospace;
+
+  /* fluid scale, each step at least 1.25 above the last */
+  --t-micro: clamp(0.8125rem, 0.79rem + 0.11vw, 0.875rem);
+  --t-small: clamp(0.9375rem, 0.9rem + 0.2vw, 1.0313rem);
+  --t-body:  clamp(1.0625rem, 1.02rem + 0.22vw, 1.1875rem);
+  --t-h3:    clamp(1.35rem, 1.26rem + 0.44vw, 1.55rem);
+  --t-h2:    clamp(1.75rem, 1.55rem + 1vw, 2.35rem);
+  --t-h1:    clamp(2.1rem, 1.35rem + 3.5vw, 4rem);
+
+  --pad: clamp(1.25rem, 5vw, 4rem);
+  --gap: clamp(3.75rem, 9vw, 7.5rem);
+
+  --cols:
+    [full-start] minmax(var(--pad), 1fr)
+    [wide-start] minmax(0, 15rem)
+    [text-start] min(64ch, calc(100% - var(--pad) * 2)) [text-end]
+    minmax(0, 15rem) [wide-end]
+    minmax(var(--pad), 1fr) [full-end];
+
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  background: var(--board);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--board);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: var(--t-body);
+  line-height: 1.62;
+  text-rendering: optimizeLegibility;
+  overflow-wrap: break-word;
+}
+
+img { max-width: 100%; height: auto; display: block; }
+
+::selection { background: var(--fill); color: var(--ink); }
+
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10;
+  background: var(--raised);
+  color: var(--ink);
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+}
+.skip:focus { left: 0; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --- hero ----------------------------------------------------------------- */
+/* Narrow: text on flat ground, the scene as a band below it, so type is never
+   set over the bright part of a photograph. Wide: the same single <img>
+   becomes the backdrop and the text sits in the deliberately dark left third,
+   under a flat scrim. One image element either way, one download. */
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  background: var(--board);
+}
+
+.hero__scene {
+  order: 2;
+  width: 100%;
+  aspect-ratio: 1672 / 941;
+  object-fit: cover;
+  object-position: 68% center;
+}
+
+.hero__scrim { display: none; }
+
+.hero__body {
+  order: 1;
+  padding: clamp(3.5rem, 12vw, 6rem) var(--pad) clamp(2.75rem, 7vw, 4rem);
+}
+
+.hero__name {
+  margin: 0 0 clamp(1.75rem, 5vw, 3rem);
+  font-family: var(--mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+}
+
+.hero__line {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: var(--t-h1);
+  line-height: 1.07;
+  letter-spacing: -0.018em;
+  margin: 0;
+  max-width: 17ch;
+  text-wrap: balance;
+}
+
+.hero__sub {
+  margin: clamp(1.5rem, 4vw, 2rem) 0 0;
+  max-width: 46ch;
+  color: var(--ink-dim);
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin: clamp(2rem, 5vw, 2.75rem) 0 0;
+  align-items: center;
+}
+
+.hero__meta {
+  margin: clamp(1.75rem, 4vw, 2.25rem) 0 0;
+  font-family: var(--mono);
+  font-size: var(--t-micro);
+  color: var(--ink-dim);
+}
+
+.btn {
+  display: inline-block;
+  font-family: var(--serif);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.85em 1.35em;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background-color 140ms cubic-bezier(0.25, 1, 0.5, 1),
+              border-color 140ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.btn--go { background: var(--amber); color: var(--board); }
+.btn--go:hover { background: #F2BC69; }
+
+.btn--quiet { color: var(--ink); border-color: var(--edge); }
+.btn--quiet:hover { border-color: var(--ink); background: var(--fill); }
+
+@media (min-width: 62rem) {
+  .hero {
+    display: block;
+    position: relative;
+    isolation: isolate;
+    min-height: 40rem;
+    min-height: min(44rem, 92svh);
+  }
+  .hero__scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    object-position: center;
+  }
+  .hero__scrim {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 15, 11, 0.46);   /* flat fill, not a gradient */
+  }
+  .hero__body {
+    position: relative;
+    z-index: 1;
+    min-height: 40rem;
+    min-height: min(44rem, 92svh);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    max-width: 42rem;
+    padding: 5.5rem var(--pad) clamp(3.5rem, 7vw, 5.5rem);
+  }
+  .hero__name { margin-bottom: auto; }
+  .hero__line { max-width: 15ch; }
+}
+
+/* --- page grid ------------------------------------------------------------ */
+
+.page {
+  display: grid;
+  grid-template-columns: var(--cols);
+}
+
+.page > * { grid-column: text; }
+
+main.page { padding-top: clamp(4.5rem, 11vw, 8rem); }
+
+main.page > section + section { margin-top: var(--gap); }
+
+/* --- headings and prose --------------------------------------------------- */
+
+h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: var(--t-h2);
+  line-height: 1.14;
+  letter-spacing: -0.012em;
+  margin: 0 0 1.4em;
+  max-width: 22ch;
+  text-wrap: balance;
+}
+
+h3 {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: var(--t-h3);
+  line-height: 1.32;
+  margin: 2.5em 0 0.7em;
+  max-width: 36ch;
+}
+
+h2 + h3 { margin-top: 0; }
+
+p { margin: 0 0 1.15em; }
+p:last-child { margin-bottom: 0; }
+
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--ink-dim);
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-color 140ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+a:hover { text-decoration-color: var(--ink); }
+
+code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  word-break: break-word;
+}
+
+.note { color: var(--ink-dim); margin-top: 1.5em; }
+
+/* --- code blocks ---------------------------------------------------------- */
+
+.code {
+  background: var(--raised);
+  border: 1px solid var(--fill);
+  margin: 1.9em 0;
+  overflow-x: auto;
+}
+
+.code pre {
+  margin: 0;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  font-family: var(--mono);
+  font-size: clamp(0.8125rem, 0.76rem + 0.28vw, 0.9375rem);
+  line-height: 1.75;
+  color: var(--ink);
+  white-space: pre;
+  tab-size: 2;
+}
+
+.code code { font-size: inherit; word-break: normal; }
+.code .c { color: var(--ink-dim); }
+
+/* --- requirements --------------------------------------------------------- */
+
+.reqs { margin: 1.9em 0 2.4em; }
+
+.reqs dt { font-weight: 700; margin-top: 1.5em; }
+.reqs dt:first-child { margin-top: 0; }
+.reqs dd { margin: 0.2em 0 0; color: var(--ink-dim); }
+
+/* --- screenshots ---------------------------------------------------------- */
+/* Not a card grid. The five caps below are chosen so that images with very
+   different aspect ratios land at roughly the same rendered height, which is
+   what makes them read as five windows instead of five tiles. */
+
+.shots {
+  grid-column: full;
+  display: grid;
+  grid-template-columns: var(--cols);
+}
+
+.shots > * { grid-column: text; }
+
+.shot {
+  grid-column: wide;
+  margin: clamp(3rem, 7vw, 5rem) auto 0;
+  width: 100%;
+}
+
+.shot img { width: 100%; border: 1px solid var(--fill); }
+
+.shot--sq     { max-width: 56rem; }
+.shot--reader { max-width: 52rem; }
+.shot--lib    { max-width: 50rem; }
+.shot--first  { max-width: 46rem; }
+.shot--set    { max-width: 40rem; }
+
+.shot figcaption {
+  margin: 1.15em 0 0;
+  max-width: 58ch;
+  color: var(--ink-dim);
+  font-size: var(--t-small);
+  line-height: 1.66;
+}
+
+/* --- closing and footer --------------------------------------------------- */
+
+.close__line {
+  font-family: var(--display);
+  font-size: var(--t-h3);
+  line-height: 1.32;
+  margin: 0;
+  max-width: 28ch;
+}
+
+.close .hero__actions { margin-top: 1.9rem; }
+
+.foot { padding-block: clamp(4.5rem, 11vw, 8rem) clamp(3rem, 8vw, 5rem); }
+
+.foot p {
+  color: var(--ink-dim);
+  font-size: var(--t-small);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* --- motion --------------------------------------------------------------- */
+/* Nothing here is ever the difference between visible and invisible. The hero
+   settles once on load; sections lift the last few pixels as they scroll in,
+   starting from 0.4 opacity rather than 0, and only where scroll-driven
+   animation is genuinely supported. A browser without it, a background tab or
+   a headless renderer gets the finished page. Curves are the app's own
+   ease-out-quart and ease-out-quint. */
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero__name,
+  .hero__line,
+  .hero__sub,
+  .hero__actions,
+  .hero__meta {
+    animation: settle 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .hero__line    { animation-delay: 60ms; }
+  .hero__sub     { animation-delay: 120ms; }
+  .hero__actions { animation-delay: 170ms; }
+  .hero__meta    { animation-delay: 210ms; }
+
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: lift linear both;
+      animation-timeline: view();
+      animation-range: entry 5% cover 20%;
+    }
+  }
+}
+
+@keyframes settle {
+  from { opacity: 0.35; transform: translateY(0.6rem); }
+  to   { opacity: 1;    transform: none; }
+}
+
+/* 0.8, not 0. Even if a renderer freezes this timeline at its start value, the
+   worst case is body text at 10.2:1 instead of 15.8:1, which is still legible.
+   Reveals enhance a page that is already there. */
+@keyframes lift {
+  from { opacity: 0.8; transform: translateY(0.75rem); }
+  to   { opacity: 1;   transform: none; }
+}
+
+/* ---- The file a lecture becomes -------------------------------------------
+   The one thing a student actually receives, shown rather than described. It
+   is a figure, not a card: a labelled path over a raised sheet, the same two
+   planes the app itself uses (`board` under `sheet`), with the frontmatter set
+   in the typed face because that is how it appears in the file.
+
+   Frontmatter keys are copied from a note on disk and checked against
+   `NoteRenderer.render`. An earlier draft invented them and got three wrong,
+   on a page whose entire argument is that it shows you the truth. */
+
+.file {
+  margin: 2.2rem 0 1.6rem;
+  grid-column: wide;
+}
+
+.file__path {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--ink-dim);
+  padding-bottom: 0.7rem;
+  word-break: break-all;
+}
+
+.file__sheet {
+  background: var(--sheet);
+  border: 1px solid var(--edge);
+}
+
+.file__src {
+  margin: 0;
+  padding: 1.1rem 1.3rem;
+  border-bottom: 1px solid var(--edge);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.75;
+  overflow-x: auto;
+  color: var(--ink);
+}
+
+.file__src .k { color: var(--ink-dim); }
+.file__src .c { color: var(--ink-dim); }
+
+.file__body { padding: 1.5rem 1.3rem 1.7rem; }
+
+.file__h1 {
+  font-family: var(--display);
+  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+  line-height: 1.2;
+  margin: 0;
+  color: var(--ink);
+}
+
+.file__meta {
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  margin: 0.35rem 0 1.4rem;
+}
+
+.file__body h4 {
+  font-size: 1rem;
+  margin: 0 0 0.6rem;
+  color: var(--ink);
+}
+
+.file__body ul { margin: 0 0 1.3rem; padding-left: 1.1rem; }
+.file__body li { margin-bottom: 0.5rem; color: var(--ink-dim); }
+.file__body li b { color: var(--ink); }
+
+/* The app draws this callout the same way: a hairline on the leading edge, a
+   filled disc, and the title. The rule is 1px — a thicker coloured left border
+   is a side stripe, which the system bans outright. */
+.file__callout {
+  background: var(--fill);
+  border-left: 1px solid var(--amber);
+  padding: 0.9rem 1.1rem;
+  margin: 0 0 1.2rem;
+}
+
+.file__callout p { margin: 0; color: var(--ink); }
+.file__callout p + p { margin-top: 0.45rem; }
+
+.file__callout-h {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.file__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--amber);
+  flex: none;
+}
+
+.file__cut {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  font-style: italic;
+}
+
+@media (max-width: 34em) {
+  .file__src { font-size: 0.72rem; padding: 0.9rem 1rem; }
+  .file__body { padding: 1.2rem 1rem 1.4rem; }
+}

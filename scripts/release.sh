@@ -32,7 +32,24 @@ fi
 # No --deep. There is nothing to reach: SPM dependencies link statically into the
 # main binary, the bundle has no Frameworks/ directory, and Apple documents
 # --deep as a repair tool rather than a build step.
-codesign --force --options runtime --sign - "$app"
+#
+# --entitlements is not optional either, and leaving it off is worse than leaving
+# off --options runtime was. `--force` replaces the signature wholesale, so a
+# re-sign without it strips every entitlement xcodebuild embedded — including
+# `com.apple.security.device.audio-input`. Under hardened runtime that is what
+# grants microphone access, so the app was refused the microphone at the runtime
+# level, macOS never registered a request, and it never appeared in System
+# Settings › Privacy & Security › Microphone at all. Not "denied": absent.
+codesign --force --options runtime \
+	--entitlements App/Resources/LectureNotes.entitlements \
+	--sign - "$app"
+
+# Verified rather than assumed, because both of this script's signing bugs looked
+# fine in `codesign --verify` and only showed up in what the app could do.
+if ! codesign -d --entitlements - "$app" 2>&1 | grep -q "audio-input"; then
+	echo "release.sh: the signed bundle has no audio-input entitlement" >&2
+	exit 1
+fi
 codesign --verify --deep --strict "$app"
 
 version=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")

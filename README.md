@@ -1,5 +1,7 @@
 # Lecture Notes
 
+**[lecture-notes-mac.vercel.app](https://lecture-notes-mac.vercel.app)**
+
 **Record a lecture; it is transcribed on this Mac's Neural Engine, and no audio
 ever leaves the machine.** Structured study notes — summary, key terms, likely
 exam material, open questions, full transcript — are then filed into your
