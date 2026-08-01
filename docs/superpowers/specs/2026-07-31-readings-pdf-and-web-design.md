@@ -244,7 +244,13 @@ file belongs to the user and may be their only copy.
 | `App/SessionModel.swift` | split `writeUp`, add PDF and URL entry points |
 | `App/Views/RecordView.swift` | "Something to read" block, drop target |
 | `App/Views/LibraryView.swift` | reading mark and caption line |
-| `App/Components/HatchSwatch.swift` | sheet-outline variant |
+| `App/Components/SheetMark.swift` | new — the reading's row mark |
+
+`HatchSwatch.swift` is **not** modified. Its one job is speech density; a mode
+where it draws something that is not hatching would be a second job hidden
+inside it. The reading mark is a sibling file at the same 24pt width and in the
+same `inkSoft`, so the two read as one system without either knowing about the
+other.
 
 No changes to `AudioCapture`, `Transcriber`, `VaultWriter`, `RosterWriter`,
 `ConfigImport`, `Preflight`, `DesignTokens`, or any recording code path.
