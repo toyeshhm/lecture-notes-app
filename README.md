@@ -8,6 +8,12 @@ exam material, open questions, full transcript — are then filed into your
 Obsidian vault under the course the lecture belongs to, which the app works out
 from what the lecturer says.
 
+A PDF or a web page can be written up the same way: its text is read on this Mac
+— including scans, which are read with on-device OCR — and the notes are filed
+under the course it belongs to, exactly as a lecture is. As with a lecture, the
+**text** is sent to Claude because that is what the notes are written from; the
+PDF and the page are read locally.
+
 This is the native macOS successor to
 [lecture-notes](https://github.com/toyeshhm/lecture-notes), the Python CLI that
 does the same job in a terminal. Same pipeline, same vault layout, same
