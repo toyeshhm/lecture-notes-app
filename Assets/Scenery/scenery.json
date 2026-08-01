@@ -2,35 +2,99 @@
   "scenery": [
     {
       "slug": "clearing",
-      "title": "ChatGPT Image Jul 31, 2026, 04_23_47 PM.png",
+      "title": "",
       "descriptionUrl": "",
       "licence": "Generated",
       "credit": "Generated with ChatGPT (OpenAI) for this project",
       "file": "clearing.jpg"
     },
     {
+      "slug": "falls",
+      "title": "",
+      "descriptionUrl": "",
+      "licence": "Generated",
+      "credit": "Generated with ChatGPT (OpenAI) for this project",
+      "file": "falls.jpg"
+    },
+    {
+      "slug": "ferns",
+      "title": "",
+      "descriptionUrl": "",
+      "licence": "Generated",
+      "credit": "Generated with ChatGPT (OpenAI) for this project",
+      "file": "ferns.jpg"
+    },
+    {
       "slug": "hollow",
-      "title": "ChatGPT Image Jul 31, 2026, 04_25_51 PM.png",
+      "title": "",
       "descriptionUrl": "",
       "licence": "Generated",
       "credit": "Generated with ChatGPT (OpenAI) for this project",
       "file": "hollow.jpg"
     },
     {
+      "slug": "leaves",
+      "title": "",
+      "descriptionUrl": "",
+      "licence": "Generated",
+      "credit": "Generated with ChatGPT (OpenAI) for this project",
+      "file": "leaves.jpg"
+    },
+    {
+      "slug": "path",
+      "title": "",
+      "descriptionUrl": "",
+      "licence": "Generated",
+      "credit": "Generated with ChatGPT (OpenAI) for this project",
+      "file": "path.jpg"
+    },
+    {
       "slug": "pines",
-      "title": "ChatGPT Image Jul 31, 2026, 04_27_41 PM.png",
+      "title": "",
       "descriptionUrl": "",
       "licence": "Generated",
       "credit": "Generated with ChatGPT (OpenAI) for this project",
       "file": "pines.jpg"
     },
     {
+      "slug": "pool",
+      "title": "",
+      "descriptionUrl": "",
+      "licence": "Generated",
+      "credit": "Generated with ChatGPT (OpenAI) for this project",
+      "file": "pool.jpg"
+    },
+    {
       "slug": "rain",
-      "title": "ChatGPT Image Jul 31, 2026, 04_29_09 PM.png",
+      "title": "",
       "descriptionUrl": "",
       "licence": "Generated",
       "credit": "Generated with ChatGPT (OpenAI) for this project",
       "file": "rain.jpg"
+    },
+    {
+      "slug": "rainfall",
+      "title": "",
+      "descriptionUrl": "",
+      "licence": "Generated",
+      "credit": "Generated with ChatGPT (OpenAI) for this project",
+      "file": "rainfall.jpg"
+    },
+    {
+      "slug": "ravine",
+      "title": "",
+      "descriptionUrl": "",
+      "licence": "Generated",
+      "credit": "Generated with ChatGPT (OpenAI) for this project",
+      "file": "ravine.jpg"
+    },
+    {
+      "slug": "winter",
+      "title": "",
+      "descriptionUrl": "",
+      "licence": "Generated",
+      "credit": "Generated with ChatGPT (OpenAI) for this project",
+      "file": "winter.jpg"
     }
   ]
 }

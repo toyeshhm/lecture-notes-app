@@ -18,6 +18,10 @@ struct SidebarView: View {
     @Environment(SessionModel.self) private var session
 
     @State private var courses: [Course] = []
+    /// One scene per course, assigned across the whole set. Every course is on
+    /// screen together here, so this is precisely where two of them sharing a
+    /// picture would be noticed.
+    @State private var scenes: [String: Backdrop] = [:]
 
     private struct Course: Identifiable {
         let code: String
@@ -113,6 +117,7 @@ struct SidebarView: View {
                     CourseRow(
                         code: item.code,
                         name: item.name,
+                        scene: scenes[item.code],
                         isSelected: course == item.code && section == .library,
                         isRecording: session.phase == .recording && session.course == item.code,
                         select: {
@@ -139,6 +144,7 @@ struct SidebarView: View {
         // Scanning touches the disk; off the main actor so a slow or unmounted
         // network volume cannot stall a frame.
         let found = await Task.detached { CourseDetector.candidates(in: directory) }.value
+        scenes = Scenery.assign(courses: Array(found.keys))
         courses = found
             .map { Course(code: $0.key, name: $0.value) }
             .sorted { first, second in
@@ -246,6 +252,7 @@ private struct NavRow: View {
 private struct CourseRow: View {
     let code: String
     let name: String
+    let scene: Backdrop?
     let isSelected: Bool
     let isRecording: Bool
     let select: () -> Void
@@ -254,8 +261,6 @@ private struct CourseRow: View {
     @State private var isHovering = false
 
     private static let thumbnail: CGFloat = 26
-
-    private var scene: Backdrop? { Scenery.scene(for: code) }
 
     private var fill: Double {
         if isSelected { return 1 }
