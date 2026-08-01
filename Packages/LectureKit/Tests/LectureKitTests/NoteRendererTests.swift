@@ -168,3 +168,81 @@ struct PromptsTests {
         #expect(prompt.contains("Full lecture transcript:\nwords"))
     }
 }
+
+@Suite("Rendering a reading")
+struct ReadingRenderTests {
+
+    private let renderer = NoteRenderer()
+
+    private func reading(source: NoteSource) -> LectureNote {
+        LectureNote(
+            date: "2026-09-02",
+            course: "CS 314H",
+            topic: "Dynamic programming",
+            finalNotes: "## Summary\n\nSubproblems.",
+            // A reading never carries one, but the field exists and a stray
+            // value must not reach the file.
+            transcript: "should not appear",
+            duration: 3_180,
+            source: source)
+    }
+
+    @Test("a PDF is typed as a reading and records where it came from")
+    func rendersPDFFrontmatter() {
+        let note = reading(
+            source: .pdf(file: URL(fileURLWithPath: "/vault/_Inbox/dp notes.pdf"),
+                         pages: 24, ocr: false))
+        let out = renderer.render(note, keepTranscript: true)
+
+        #expect(out.contains("\ntype: reading\n"))
+        #expect(out.contains("\nsource: \"/vault/_Inbox/dp notes.pdf\"\n"))
+        #expect(out.contains("\npages: 24\n"))
+        #expect(out.contains("\n  - reading\n"))
+        #expect(out.contains("\n  - cs-314h\n"))
+    }
+
+    @Test("a reading has no duration, because it has no length")
+    func omitsDuration() {
+        // Zero is a claim about the material. Absence is a claim about the file,
+        // which is the true one — and the library reads this key.
+        let out = renderer.render(
+            reading(source: .web(page: URL(string: "https://example.com/dp")!, siteTitle: "DP")),
+            keepTranscript: true)
+        #expect(!out.contains("duration_min"))
+    }
+
+    @Test("a reading never carries a transcript section")
+    func neverWritesTranscript() {
+        // The source is on disk or at a URL recorded in the frontmatter.
+        // Embedding it would double the vault and make the note unreadable.
+        let out = renderer.render(
+            reading(source: .pdf(file: URL(fileURLWithPath: "/a.pdf"), pages: 2, ocr: false)),
+            keepTranscript: true)
+        #expect(!out.contains("## Transcript"))
+        #expect(!out.contains("should not appear"))
+    }
+
+    @Test("OCR is recorded only when it was used")
+    func recordsOCROnlyWhenUsed() {
+        // Worth knowing when reading the note back: OCR text has errors that
+        // text-layer extraction does not.
+        let scanned = renderer.render(
+            reading(source: .pdf(file: URL(fileURLWithPath: "/a.pdf"), pages: 2, ocr: true)),
+            keepTranscript: true)
+        let clean = renderer.render(
+            reading(source: .pdf(file: URL(fileURLWithPath: "/a.pdf"), pages: 2, ocr: false)),
+            keepTranscript: true)
+        #expect(scanned.contains("\nocr: true\n"))
+        #expect(!clean.contains("ocr:"))
+    }
+
+    @Test("a web reading records its URL and no page count")
+    func rendersWebFrontmatter() {
+        let out = renderer.render(
+            reading(source: .web(page: URL(string: "https://example.com/dp?a=1")!,
+                                 siteTitle: "DP")),
+            keepTranscript: true)
+        #expect(out.contains("\nsource: \"https://example.com/dp?a=1\"\n"))
+        #expect(!out.contains("pages:"))
+    }
+}

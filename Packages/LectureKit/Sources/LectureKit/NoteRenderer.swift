@@ -142,6 +142,17 @@ public func fixCallouts(_ markdown: String) -> String {
     return out.joined(separator: "\n")
 }
 
+/// Make a value safe inside a double-quoted YAML scalar.
+///
+/// Only two characters can end one early. A vault path or a URL is not attacker
+/// input here, but a filename with a quote in it is ordinary and would produce
+/// frontmatter Obsidian cannot parse — which hides the whole note's metadata.
+func yamlSafe(_ raw: String) -> String {
+    raw
+        .replacingOccurrences(of: "\\", with: "\\\\")
+        .replacingOccurrences(of: "\"", with: "\\\"")
+}
+
 private func isFence(_ line: Substring) -> Bool {
     let s = line.drop(while: \.isWhitespace)
     return s.hasPrefix("```") || s.hasPrefix("~~~")
@@ -174,10 +185,26 @@ public struct NoteRenderer: Sendable {
             "title: \"\(note.topic)\"",
             "course: \(note.course)",
             "date: \(note.date)",
-            "type: lecture",
-            "duration_min: \(Int(note.duration / 60))",
-            "status: \(note.finalNotes != nil ? "complete" : "recording")",
         ]
+        switch note.source {
+        case .lecture:
+            front.append("type: lecture")
+            front.append("duration_min: \(Int(note.duration / 60))")
+        case .pdf(let file, let pages, let ocr):
+            front.append("type: reading")
+            // Quoted: a vault path legitimately contains a colon or a `#`, both
+            // of which end a bare YAML scalar early and silently truncate it.
+            front.append("source: \"\(yamlSafe(file.path(percentEncoded: false)))\"")
+            front.append("pages: \(pages)")
+            // Only when true. OCR text carries recognition errors that a text
+            // layer does not, and a reader of the note deserves to know which
+            // they are looking at — but `ocr: false` on every clean PDF is noise.
+            if ocr { front.append("ocr: true") }
+        case .web(let page, _):
+            front.append("type: reading")
+            front.append("source: \"\(yamlSafe(page.absoluteString))\"")
+        }
+        front.append("status: \(note.finalNotes != nil ? "complete" : "recording")")
         if let detected = note.detectedCourse {
             front.append("detected_course: \(detected)")
             front.append("detection_confidence: \(note.detectionConfidence?.rawValue ?? "unknown")")
@@ -189,7 +216,7 @@ public struct NoteRenderer: Sendable {
         }
         front += [
             "tags:",
-            "  - lecture",
+            "  - \(note.source.isReading ? "reading" : "lecture")",
             "  - \(note.course.lowercased().replacingOccurrences(of: " ", with: "-"))",
             "---",
             "",
@@ -212,7 +239,7 @@ public struct NoteRenderer: Sendable {
             let live = note.liveNotes
             body += ["## Live notes", "", live.isEmpty ? "_Listening…_" : live, ""]
         }
-        if keepTranscript, !note.transcript.isEmpty {
+        if keepTranscript, !note.transcript.isEmpty, !note.source.isReading {
             body += ["---", "", "## Transcript", "", note.transcript, ""]
         }
         return front.joined(separator: "\n") + body.joined(separator: "\n")
