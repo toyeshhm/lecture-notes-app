@@ -208,7 +208,7 @@ struct RecordView: View {
         .padding(Spacing.xl)
     }
 
-    /// Recordings that arrived from somewhere else and are being written up.
+    /// Files that arrived from somewhere else and are being written up.
     ///
     /// Shown because it is otherwise invisible work that spends subscription
     /// quota: the app would sit there apparently idle while calling a model
@@ -223,9 +223,14 @@ struct RecordView: View {
                         .foregroundStyle(Palette.ink)
                 }
                 if session.inboxPending > 0 {
+                    // "File", not "recording": the inbox takes PDFs as well now,
+                    // and a count that calls a chapter of the textbook a
+                    // recording reads as the app having mistaken what it found.
+                    // Everything counted here is a file — a link is written up
+                    // directly and never lands in the inbox.
                     Text(session.inboxPending == 1
-                        ? "1 more recording waiting."
-                        : "\(session.inboxPending) more recordings waiting.")
+                        ? "1 more file waiting."
+                        : "\(session.inboxPending) more files waiting.")
                         .font(Typography.ui)
                         .foregroundStyle(Palette.inkSoft)
                 }

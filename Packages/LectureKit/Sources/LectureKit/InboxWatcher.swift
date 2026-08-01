@@ -128,21 +128,34 @@ public enum InboxWatcher {
     public static func prepare(_ directory: URL) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let readme = directory.appending(path: "README.md")
-        guard !FileManager.default.fileExists(atPath: readme.path(percentEncoded: false)) else { return }
-        try """
-            # Lecture inbox
-
-            Audio dropped in here is transcribed and written up by Lecture Notes,
-            then filed under the course it worked out, exactly as if you had
-            recorded it in the app. A PDF dropped in here is read and written up
-            the same way.
-
-            The point of this folder is your phone. Record a lecture with Voice
-            Memos, share it into this folder, and it syncs here. Nothing needs to
-            be installed on the phone and nothing needs to be paired.
-
-            Processing happens when the Mac is awake and the app is running. The
-            file itself is moved into `Written up/` rather than deleted.
-            """.write(to: readme, atomically: true, encoding: .utf8)
+        // Rewritten when it is out of date, not only when it is missing. Every
+        // install that predates readings already has a README saying this folder
+        // takes audio, and a guard on existence alone would leave those users —
+        // the ones who have actually been using the inbox — never told that a
+        // PDF works too. Comparing the contents rather than writing every time is
+        // what keeps it out of the sync client's queue: `prepare` runs on every
+        // inbox pass, and an unconditional write would re-upload README.md to
+        // Dropbox each time the Mac wakes.
+        guard (try? String(contentsOf: readme, encoding: .utf8)) != readmeText else { return }
+        try readmeText.write(to: readme, atomically: true, encoding: .utf8)
     }
+
+    /// The folder's own explanation of itself. A stored property rather than a
+    /// literal at the write site so `prepare` can tell a stale README from a
+    /// current one.
+    static let readmeText = """
+        # Lecture inbox
+
+        Audio dropped in here is transcribed and written up by Lecture Notes,
+        then filed under the course it worked out, exactly as if you had
+        recorded it in the app. A PDF dropped in here is read and written up
+        the same way.
+
+        The point of this folder is your phone. Record a lecture with Voice
+        Memos, share it into this folder, and it syncs here. Nothing needs to
+        be installed on the phone and nothing needs to be paired.
+
+        Processing happens when the Mac is awake and the app is running. The
+        file itself is moved into `Written up/` rather than deleted.
+        """
 }

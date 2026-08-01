@@ -141,6 +141,22 @@ func prepareWritesAReadme() throws {
     #expect(readme.contains("Written up"))
 }
 
+@Test("a README from before readings is brought up to date")
+func prepareRefreshesAStaleReadme() throws {
+    // The inbox is years old on any install that has used it, so an existence
+    // guard would tell only new users that a PDF works here.
+    let box = try InboxSandbox()
+    let inbox = box.dir.appending(path: "_Lecture Inbox")
+    try FileManager.default.createDirectory(at: inbox, withIntermediateDirectories: true)
+    let readme = inbox.appending(path: "README.md")
+    try "# Lecture inbox\n\nAudio dropped in here is transcribed.\n"
+        .write(to: readme, atomically: true, encoding: .utf8)
+
+    try InboxWatcher.prepare(inbox)
+
+    #expect(try String(contentsOf: readme, encoding: .utf8) == InboxWatcher.readmeText)
+}
+
 @Test("a PDF in the inbox is picked up alongside recordings")
 func picksUpPDFs() throws {
     let box = try InboxSandbox()
