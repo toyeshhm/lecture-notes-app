@@ -145,11 +145,20 @@ flag never gets attached in the first place.
 git clone https://github.com/toyeshhm/lecture-notes-app.git
 cd lecture-notes-app
 brew install xcodegen
-make app
-open .build-xcode/Build/Products/Debug/LectureNotes.app
+make install
+open -a "Lecture Notes"
 ```
 
-`make release` produces the signed, zipped bundle in `dist/` instead.
+`make install` builds a signed Release bundle, puts it in `/Applications`, and
+then verifies the copy that landed there — signature, microphone entitlement and
+bundled scenery. Use it rather than copying by hand: `make app` and `make
+release` build into `.build-xcode/` and `dist/` and install nothing, so the app
+you launch stays the previous build and a change appears simply not to have
+happened.
+
+To run a build without installing it, `make app` and open
+`.build-xcode/Build/Products/Debug/LectureNotes.app`. `make release` produces
+the signed, zipped bundle in `dist/`.
 
 > **Expect to grant microphone access more than once.** macOS keys microphone
 > permission to an app's code signature, and an ad-hoc signature is regenerated
@@ -230,12 +239,17 @@ jurisdiction. That is on you, not on this tool.
 
 ```bash
 make lint        # builds LectureKit with every warning fatal
-make test        # swift test — 96 tests
-make check       # both
+make test        # swift test — 174 tests
+make check       # lint, then the app build, then test
 make app         # Debug build of the app
 make snapshots   # regenerate Snapshots/
 make release     # Release build, ad-hoc signature, zip in dist/
+make install     # release, then into /Applications, then verify it
 ```
+
+`make check` includes the app build on purpose. `lint` and `test` both address
+the package only, so without it two thirds of the codebase can go green without
+a line of `App/Sources` being compiled.
 
 `xcodegen generate` runs ahead of every Xcode build, because
 `LectureNotes.xcodeproj` is generated from `project.yml` and is not tracked.
