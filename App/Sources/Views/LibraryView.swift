@@ -290,6 +290,21 @@ private struct LectureRow: View {
             .formatted(.units(allowed: [.hours, .minutes], width: .wide))
     }
 
+    /// What stands where a lecture's duration stands.
+    ///
+    /// A reading has no length, so the field carries what it does have: the
+    /// format, and either its extent or where it came from.
+    private var sourceText: String {
+        guard lecture.isReading else { return durationText }
+        if let pages = lecture.pages, pages > 0 {
+            return "PDF · \(pages) pp"
+        }
+        if let ref = lecture.sourceRef, let host = URL(string: ref)?.host() {
+            return "web · \(host)"
+        }
+        return "reading"
+    }
+
     /// `status: complete` is what the final pass writes. Anything else — the
     /// `recording` a crashed session leaves behind, or a value a person typed —
     /// is not a finished note.
@@ -298,7 +313,11 @@ private struct LectureRow: View {
     var body: some View {
         Button(action: select) {
             HStack(alignment: .top, spacing: Spacing.md) {
-                HatchSwatch(wordsPerMinute: lecture.wordsPerMinute)
+                if lecture.isReading {
+                    SheetMark()
+                } else {
+                    HatchSwatch(wordsPerMinute: lecture.wordsPerMinute)
+                }
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text(lecture.topic)
                         .font(Typography.uiBold)
@@ -325,7 +344,7 @@ private struct LectureRow: View {
                     // Curtis plate. One line, never a chip row.
                     SpecimenLabel(
                         title: displayCourse,
-                        detail: "\(lecture.date) · \(durationText)")
+                        detail: "\(lecture.date) · \(sourceText)")
                 }
                 Spacer(minLength: 0)
             }
@@ -349,13 +368,20 @@ private struct LectureRow: View {
     /// Everything the row draws, including the hatch swatch's density, which is
     /// hidden from the tree precisely so it can be said here in words.
     private var accessibilityLabel: String {
+        // A reading has no duration to announce, and an empty clause leaves a
+        // dangling separator mid-sentence, so the caption's own field is spoken
+        // instead. The density clause goes the same way: it is here to speak the
+        // hatch swatch, and a reading draws a sheet mark rather than one, so
+        // "no transcript" would describe a mark that is not on screen.
         var parts = [
             lecture.topic,
             displayCourse,
             lecture.date,
-            spokenDuration,
-            HatchSwatch.densityDescription(wordsPerMinute: lecture.wordsPerMinute),
+            lecture.isReading ? sourceText : spokenDuration,
         ]
+        if !lecture.isReading {
+            parts.append(HatchSwatch.densityDescription(wordsPerMinute: lecture.wordsPerMinute))
+        }
         if !isComplete { parts.append("Unfinished") }
         // A note with no date or no duration would otherwise contribute an empty
         // part, which joins as a doubled full stop and reads as a pause where
