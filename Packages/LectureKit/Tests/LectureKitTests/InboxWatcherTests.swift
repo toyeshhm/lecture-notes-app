@@ -57,14 +57,17 @@ func skipsTinyFiles() throws {
     #expect(InboxWatcher.pending(in: box.dir).isEmpty)
 }
 
-@Test("only audio is considered")
-func ignoresNonAudio() throws {
+@Test("only audio and PDFs are considered")
+func ignoresEverythingElse() throws {
     let box = try InboxSandbox()
+    // `README.md` is the folder's own explanation of itself, written by
+    // `prepare`. Reading it back as material would write up the instructions.
     try box.drop("README.md")
     try box.drop("notes.pdf")
     try box.drop("lecture.m4a")
 
-    #expect(InboxWatcher.pending(in: box.dir).map(\.url.lastPathComponent) == ["lecture.m4a"])
+    #expect(Set(InboxWatcher.pending(in: box.dir).map(\.url.lastPathComponent))
+        == ["lecture.m4a", "notes.pdf"])
 }
 
 @Test("oldest first, so lectures are written up in the order they happened")
@@ -136,6 +139,55 @@ func prepareWritesAReadme() throws {
         .split(whereSeparator: \.isWhitespace).joined(separator: " ")
     #expect(readme.contains("Voice Memos"))
     #expect(readme.contains("Written up"))
+}
+
+@Test("a PDF in the inbox is picked up alongside recordings")
+func picksUpPDFs() throws {
+    let box = try InboxSandbox()
+    try box.drop("chapter 4.pdf", bytes: 40_000)
+    try box.drop("lecture.m4a")
+
+    let pending = InboxWatcher.pending(in: box.dir)
+
+    #expect(pending.count == 2)
+    #expect(pending.first(where: { $0.url.pathExtension == "pdf" })?.kind == .pdf)
+    #expect(pending.first(where: { $0.url.pathExtension == "m4a" })?.kind == .audio)
+}
+
+@Test("a small PDF is still a PDF")
+func acceptsSmallPDFs() throws {
+    // The 60 KB floor is twenty seconds of AAC at a voice bitrate. A legitimate
+    // one-page PDF is a few kilobytes, and the audio floor would discard it in
+    // silence.
+    let box = try InboxSandbox()
+    try box.drop("one page.pdf", bytes: 8_000)
+
+    #expect(InboxWatcher.pending(in: box.dir).count == 1)
+}
+
+@Test("an empty PDF is not")
+func rejectsEmptyPDFs() throws {
+    let box = try InboxSandbox()
+    try box.drop("placeholder.pdf", bytes: 100)
+
+    #expect(InboxWatcher.pending(in: box.dir).isEmpty)
+}
+
+@Test("a small audio file is still discarded")
+func stillRejectsShortAudio() throws {
+    // The audio floor is unchanged. This is the regression guard on splitting it.
+    let box = try InboxSandbox()
+    try box.drop("misfire.m4a", bytes: 8_000)
+
+    #expect(InboxWatcher.pending(in: box.dir).isEmpty)
+}
+
+@Test("a PDF still being synced is left alone")
+func waitsForPDFsToSettle() throws {
+    let box = try InboxSandbox()
+    try box.drop("arriving.pdf", bytes: 40_000, ageSeconds: 2)
+
+    #expect(InboxWatcher.pending(in: box.dir).isEmpty)
 }
 
 @Test("the inbox sits outside the courses folder")

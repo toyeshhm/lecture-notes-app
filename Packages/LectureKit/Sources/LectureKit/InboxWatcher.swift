@@ -20,6 +20,13 @@ public enum InboxWatcher {
     /// transcribing one rather than assumed from the format list.
     static let audioExtensions: Set<String> = ["m4a", "wav", "mp3", "aac", "caf", "aiff", "aif", "mp4"]
 
+    /// What kind of thing is waiting. The two are processed differently — one is
+    /// transcribed, the other read — and everything after that is shared.
+    public enum Kind: String, Sendable, Equatable {
+        case audio
+        case pdf
+    }
+
     /// A recording that is ready to process, with the facts needed to decide
     /// whether it is worth spending a model call on.
     public struct Pending: Sendable, Equatable, Identifiable {
@@ -29,6 +36,7 @@ public enum InboxWatcher {
         /// modification time is closer to when the lecture happened than the
         /// moment the Mac woke up and noticed it.
         public var modified: Date
+        public var kind: Kind
         public var id: URL { url }
     }
 
@@ -52,7 +60,16 @@ public enum InboxWatcher {
 
         let now = Date()
         return names.compactMap { url -> Pending? in
-            guard audioExtensions.contains(url.pathExtension.lowercased()) else { return nil }
+            let ext = url.pathExtension.lowercased()
+            let kind: Kind
+            if audioExtensions.contains(ext) {
+                kind = .audio
+            } else if ext == "pdf" {
+                kind = .pdf
+            } else {
+                return nil
+            }
+
             guard let values = try? url.resourceValues(forKeys: [
                 .fileSizeKey, .contentModificationDateKey, .isRegularFileKey,
             ]), values.isRegularFile == true,
@@ -62,12 +79,13 @@ public enum InboxWatcher {
             // A file still being written keeps moving its modification date. A
             // sync client that has finished leaves it alone.
             guard now.timeIntervalSince(modified) >= settledFor else { return nil }
-            // Anything this small is not a lecture — an interrupted share, a
+            // Anything this small is not material — an interrupted share, a
             // zero-byte placeholder, or a two-second misfire. Processing one
             // spends a model call to produce a note about nothing.
-            guard size >= minimumBytes else { return nil }
+            let floor = kind == .audio ? minimumAudioBytes : minimumPDFBytes
+            guard size >= floor else { return nil }
 
-            return Pending(url: url, bytes: Int64(size), modified: modified)
+            return Pending(url: url, bytes: Int64(size), modified: modified, kind: kind)
         }
         // Oldest first: lectures are written up in the order they happened.
         .sorted { $0.modified < $1.modified }
@@ -75,7 +93,12 @@ public enum InboxWatcher {
 
     /// Roughly twenty seconds of AAC at a voice bitrate. Below this there is
     /// nothing to summarise.
-    static let minimumBytes = 60_000
+    static let minimumAudioBytes = 60_000
+
+    /// A PDF gets its own floor, and a far smaller one: a legitimate one-page
+    /// handout is a few kilobytes, and applying the audio figure would discard
+    /// it silently. This only has to reject a zero-byte sync placeholder.
+    static let minimumPDFBytes = 1_000
 
     /// Where processed audio goes.
     ///
@@ -111,14 +134,15 @@ public enum InboxWatcher {
 
             Audio dropped in here is transcribed and written up by Lecture Notes,
             then filed under the course it worked out, exactly as if you had
-            recorded it in the app.
+            recorded it in the app. A PDF dropped in here is read and written up
+            the same way.
 
             The point of this folder is your phone. Record a lecture with Voice
             Memos, share it into this folder, and it syncs here. Nothing needs to
             be installed on the phone and nothing needs to be paired.
 
             Processing happens when the Mac is awake and the app is running. The
-            recording itself is moved into `Written up/` rather than deleted.
+            file itself is moved into `Written up/` rather than deleted.
             """.write(to: readme, atomically: true, encoding: .utf8)
     }
 }
