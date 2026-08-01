@@ -16,6 +16,7 @@ struct RecordView: View {
     @Environment(SessionModel.self) private var session
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pulsing = false
+    @State private var link = ""
 
     private var isRecording: Bool { session.phase == .recording }
 
@@ -34,6 +35,14 @@ struct RecordView: View {
         }
         .defaultScrollAnchor(.top)
         .background(Palette.board)
+        // Refused rather than accepted-and-ignored when nothing dragged is a
+        // PDF: returning true would show the drop as having worked.
+        .dropDestination(for: URL.self) { urls, _ in
+            let pdfs = urls.filter { $0.pathExtension.lowercased() == "pdf" }
+            guard !pdfs.isEmpty else { return false }
+            Task { await session.addPDFs(pdfs) }
+            return true
+        }
     }
 
     // MARK: Hero
@@ -255,6 +264,7 @@ struct RecordView: View {
             .font(Typography.bodyText)
 
             fromPhone.padding(.top, Spacing.lg)
+            readingSection.padding(.top, Spacing.lg)
         }
     }
 
@@ -285,6 +295,69 @@ struct RecordView: View {
                 }
             }
         }
+    }
+
+    /// PDFs and web pages.
+    ///
+    /// A sibling of `fromPhone` rather than part of it: both are "material that
+    /// did not come from the microphone", but one is a folder you point a share
+    /// sheet at once and forget, and the other is a thing you do deliberately
+    /// each time. Sharing a section would bury the folder.
+    private var readingSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            sectionRule("Something to read")
+            Text("A PDF or a web page is read and written up the same way, filed under the course it belongs to. PDFs dropped into the inbox folder work too.")
+                .font(Typography.bodyText)
+                .foregroundStyle(Palette.inkSoft)
+                .fixedSize(horizontal: false, vertical: true)
+
+            quietAction("Add a PDF…") { choosePDFs() }
+
+            HStack(spacing: Spacing.md) {
+                TextField("https://…", text: $link)
+                    .textFieldStyle(.plain)
+                    .font(Typography.ui)
+                    .foregroundStyle(Palette.ink)
+                    .padding(.vertical, Spacing.sm)
+                    .padding(.horizontal, Spacing.md)
+                    // A hairline, per DESIGN.md §2: `rule` is never the sole
+                    // boundary of an interactive control, so the field also
+                    // carries a `wash` fill.
+                    .background(Palette.wash)
+                    .overlay(Rectangle().stroke(Palette.rule, lineWidth: Spacing.hair))
+                    .frame(maxWidth: 320)
+                    .onSubmit(submitLink)
+                    .disabled(session.isReadingLink)
+
+                quietAction(session.isReadingLink ? "Reading…" : "Write up", run: submitLink)
+                    .disabled(
+                        session.isReadingLink
+                            || link.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+    }
+
+    private func submitLink() {
+        let raw = link
+        guard !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        // Cleared straight away: the write-up takes a minute, and a field still
+        // holding the last URL reads as though nothing happened.
+        link = ""
+        Task { await session.writeUpLink(raw) }
+    }
+
+    /// PDFs only, several at once — a term's backlog of handouts is a realistic
+    /// first use, the same as the recordings picker beside it.
+    private func choosePDFs() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.allowedContentTypes = [.pdf]
+        panel.prompt = "Add"
+        panel.message = "PDFs are copied into your vault's inbox and written up."
+        guard panel.runModal() == .OK, !panel.urls.isEmpty else { return }
+        let urls = panel.urls
+        Task { await session.addPDFs(urls) }
     }
 
     private func quietAction(_ title: String, run: @escaping () -> Void) -> some View {
